@@ -5,6 +5,7 @@ import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import express from "express";
 import { generateStream } from "./llm.js"; // Ensure this path is correct
+import { generateEvaluation } from "./llmEvaluation.js"; // Ensure this path is correct
 
 const delayMs = 500;
 
@@ -40,6 +41,7 @@ app.get("/llm", async (req, res) => {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     const startTime = Date.now();
     let timeToFirstToken = 0;
+    let output = "";
     const stream = await generateStream();
     for await (const chunk of stream) {
       switch (chunk.type) {
@@ -48,6 +50,7 @@ app.get("/llm", async (req, res) => {
           break;
         case "response.output_text.delta":
           res.write(chunk.delta);
+          output += chunk.delta;
           break;
         case "response.error":
           console.error("Error in response:", chunk.error);
@@ -55,12 +58,14 @@ app.get("/llm", async (req, res) => {
           break;
       }
     }
-    const elapsedTime = Date.now() - startTime;
     res.end();
+    const elapsedTime = Date.now() - startTime;
+    const evaluation = await generateEvaluation(output);
     console.log({
       endpoint: "/llm",
       timeToFirstToken: `${timeToFirstToken} ms`,
       totalTime: `${elapsedTime} ms`,
+      evaluation,
     });
   } catch (error) {
     console.error("Error generating text:", error);
