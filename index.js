@@ -36,9 +36,16 @@ app.get("/stream", async (req, res) => {
 });
 
 app.get("/llm", async (req, res) => {
-  const output = await generateText();
-  res.setHeader("Content-Type", "text/plain; charset=utf-8");
-  res.end(output);
+  try {
+    const startTime = Date.now();
+    const output = await generateText();
+    const elapsedTime = Date.now() - startTime;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.end(`[LLM] ${output}\n\nGenerated in ${elapsedTime} ms`);
+  } catch (error) {
+    console.error("Error generating text:", error);
+    res.status(500).end("Error generating text");
+  }
 });
 
 const PORT = process.env.PORT || 3000;
