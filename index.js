@@ -5,7 +5,6 @@ import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import express from "express";
 import { generateStream } from "./llm.js"; // Ensure this path is correct
-import { time } from "node:console";
 
 const delayMs = 500;
 
