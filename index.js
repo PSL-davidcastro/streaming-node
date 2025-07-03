@@ -1,9 +1,10 @@
-
 import fs from "node:fs";
+import dotenv from "dotenv";
+dotenv.config();
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import express from "express";
-
+import { generateText } from "./llm.js"; // Ensure this path is correct
 
 const delayMs = 500;
 
@@ -20,7 +21,6 @@ const upper = new Transform({
   },
 });
 
-
 const app = express();
 
 app.get("/stream", async (req, res) => {
@@ -35,8 +35,15 @@ app.get("/stream", async (req, res) => {
   }
 });
 
+app.get("/llm", async (req, res) => {
+  const output = await generateText();
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.end(output);
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Express server listening on port ${PORT}`);
   console.log(`Try: http://localhost:${PORT}/stream`);
+  console.log(`Try: http://localhost:${PORT}/llm`);
 });
