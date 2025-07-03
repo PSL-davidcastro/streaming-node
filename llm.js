@@ -10,10 +10,11 @@ console.log(
   process.env.OPENAI_API_KEY ? "Yes" : "No"
 );
 
-export const generateText = async () => {
-  const response = await client.responses.create({
+export const generateStream = async () => {
+  const stream = await client.responses.create({
     model: "gpt-4.1",
     input: "Write a one-sentence bedtime story about a unicorn.",
+    stream: true,
   });
-  return response.output_text;
+  return stream;
 };

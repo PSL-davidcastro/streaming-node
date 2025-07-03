@@ -4,7 +4,7 @@ dotenv.config();
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import express from "express";
-import { generateText } from "./llm.js"; // Ensure this path is correct
+import { generateStream } from "./llm.js"; // Ensure this path is correct
 
 const delayMs = 500;
 
@@ -37,11 +37,27 @@ app.get("/stream", async (req, res) => {
 
 app.get("/llm", async (req, res) => {
   try {
-    const startTime = Date.now();
-    const output = await generateText();
-    const elapsedTime = Date.now() - startTime;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.end(`[LLM] ${output}\n\nGenerated in ${elapsedTime} ms`);
+    const startTime = Date.now();
+    const stream = await generateStream();
+    for await (const chunk of stream) {
+      switch (chunk.type) {
+        case "response.created":
+          res.write("LLM loading...\n");
+          break;
+        case "response.output_text.delta":
+          res.write(chunk.delta);
+          break;
+        case "response.error":
+          console.error("Error in response:", chunk.error);
+          res.write("Error: " + chunk.error + "\n");
+          break;
+        default:
+          console.warn("Unknown chunk type:", chunk.type);
+      }
+    }
+    const elapsedTime = Date.now() - startTime;
+    res.end(`\nGenerated in ${elapsedTime} ms`);
   } catch (error) {
     console.error("Error generating text:", error);
     res.status(500).end("Error generating text");
