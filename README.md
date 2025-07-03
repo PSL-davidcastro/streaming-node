@@ -5,7 +5,7 @@ This project demonstrates streaming responses from a Node.js server using Expres
 ## Features
 
 - **/stream**: Streams the contents of the current file with a delay and transforms the output to uppercase.
-- **/llm**: Streams generated text from OpenAI's GPT-4.1 model, simulating a slow response for demonstration.
+- **/llm**: Streams generated text from OpenAI's GPT-4.1 model.
 - Modular code with support for environment variables via `dotenv`.
 
 ## Project Structure
