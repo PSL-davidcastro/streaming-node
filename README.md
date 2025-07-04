@@ -6,6 +6,7 @@ This project demonstrates streaming responses from a Node.js server using Expres
 
 - **/stream**: Streams the contents of the current file with a delay and transforms the output to uppercase.
 - **/llm**: Streams generated text from OpenAI's GPT-4 model and provides automatic evaluation.
+- **Model Selection**: Choose from multiple OpenAI models for story generation with support for GPT-4.1, GPT-4.1 Mini, GPT-4.1 Nano, and o4-mini variants.
 - **Frontend Interface**: Interactive web UI for testing the streaming LLM functionality with real-time display and performance metrics.
 - **Evaluation Pipeline**: Automatic story evaluation using AI with scoring on content quality, writing style, creativity, and emotional impact.
 - **Performance Dashboard**: Comprehensive analytics dashboard tracking evaluation performance over time with historical data and trends.
@@ -48,7 +49,10 @@ This project demonstrates streaming responses from a Node.js server using Expres
 
 - Visit [http://localhost:3000/stream](http://localhost:3000/stream) to see file streaming in action.
 - Visit [http://localhost:3000/llm](http://localhost:3000/llm) to get a streamed story from the LLM.
+  - Supports model selection via query parameter: `?model=gpt-4.1-2025-04-14`
 - Visit [http://localhost:3000/api/evaluation-stats](http://localhost:3000/api/evaluation-stats) to get evaluation statistics as JSON.
+  - Supports filtering by model: `?model=o4-mini-2025-04-16`
+- Visit [http://localhost:3000/api/models](http://localhost:3000/api/models) to get available models and current model configuration.
 
 ### Frontend Interface
 
@@ -57,6 +61,11 @@ This project demonstrates streaming responses from a Node.js server using Expres
 
 The main interface provides:
 
+- **Model Selection Dropdown**: Choose from available OpenAI models including:
+  - o4-mini-2025-04-16 (Default)
+  - GPT-4.1 (gpt-4.1-2025-04-14)
+  - GPT-4.1 Mini (gpt-4.1-mini-2025-04-14)
+  - GPT-4.1 Nano (gpt-4.1-nano-2025-04-14)
 - A "Generate Story" button to trigger LLM streaming
 - Real-time display of the generated content as it streams
 - Performance metrics including time to first token and total generation time
@@ -74,6 +83,7 @@ The main interface provides:
 
 The performance dashboard provides:
 
+- **Model Filtering**: Filter analytics by specific story generation models to compare performance
 - **Historical Analytics**: Track evaluation performance over time
 - **Score Trends**: View average scores across all evaluation criteria
 - **Performance Metrics**: Monitor generation and evaluation timing
@@ -85,6 +95,35 @@ The performance dashboard provides:
   - Cost analysis and optimization insights
 - **Recent Activity**: See latest evaluations with detailed breakdowns
 - **Success Rate Tracking**: Monitor evaluation success/failure rates
+
+## Model Selection
+
+The application supports multiple OpenAI models for story generation, allowing you to compare performance, quality, and cost across different model variants:
+
+### Available Models
+
+- **o4-mini-2025-04-16** (Default): Optimized for speed and cost-effectiveness
+- **GPT-4.1 (gpt-4.1-2025-04-14)**: Latest full-featured model with enhanced capabilities
+- **GPT-4.1 Mini (gpt-4.1-mini-2025-04-14)**: Balanced performance and cost
+- **GPT-4.1 Nano (gpt-4.1-nano-2025-04-14)**: Lightweight model for basic tasks
+
+### Model Selection Features
+
+- **Frontend Dropdown**: Easy model selection in the web interface
+- **API Parameter**: Programmatic model selection via `?model=` query parameter
+- **Performance Tracking**: Individual analytics for each model's performance
+- **Model Comparison**: Compare evaluation scores, token usage, and timing across models
+- **Historical Data**: Track usage patterns and performance trends per model
+
+### Model Analytics
+
+The performance dashboard provides model-specific insights:
+
+- **Per-Model Statistics**: Average scores, token usage, and performance metrics for each model
+- **Model Comparison**: Side-by-side comparison of different models' performance
+- **Success Rates**: Track evaluation success/failure rates by model
+- **Cost Analysis**: Monitor token consumption and estimated costs per model
+- **Usage Patterns**: Identify which models are used most frequently
 
 ## Requirements
 
