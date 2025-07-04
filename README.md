@@ -6,13 +6,16 @@ This project demonstrates streaming responses from a Node.js server using Expres
 
 - **/stream**: Streams the contents of the current file with a delay and transforms the output to uppercase.
 - **/llm**: Streams generated text from OpenAI's GPT-4.1 model.
+- **Frontend Interface**: Interactive web UI for testing the streaming LLM functionality with real-time display and performance metrics.
 - Modular code with support for environment variables via `dotenv`.
 
 ## Project Structure
 
 - `index.js`: Main Express server with streaming endpoints.
-- `llm.js`: Handles OpenAI API streaming logic.
-- `prompts.js`: Contains prompt(s) for the language model.
+- `llm/llm.js`: Handles OpenAI API streaming logic.
+- `llm/llmEvaluation.js`: Contains story evaluation functionality using OpenAI.
+- `llm/prompts.js`: Contains prompt(s) for the language model.
+- `frontend/index.html`: Interactive web interface for testing LLM streaming with real-time display.
 - `package.json`: Project metadata and dependencies.
 
 ## Setup
@@ -35,8 +38,17 @@ This project demonstrates streaming responses from a Node.js server using Expres
 
 ## Usage
 
+### API Endpoints
 - Visit [http://localhost:3000/stream](http://localhost:3000/stream) to see file streaming in action.
 - Visit [http://localhost:3000/llm](http://localhost:3000/llm) to get a streamed story from the LLM.
+
+### Frontend Interface
+- Visit [http://localhost:3000/](http://localhost:3000/) to access the interactive web interface.
+- The frontend provides:
+  - A "Generate Story" button to trigger LLM streaming
+  - Real-time display of the generated content as it streams
+  - Performance metrics including time to first token and total generation time
+  - Clean, modern UI with responsive design
 
 ## Requirements
 
