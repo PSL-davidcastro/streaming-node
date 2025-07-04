@@ -14,12 +14,21 @@ async function ensureLogsDir() {
 }
 
 // Log evaluation data with timestamp and performance metrics
-export async function logEvaluation(evaluationData, performanceStats, story) {
+export async function logEvaluation(
+  evaluationData,
+  performanceStats,
+  story,
+  modelInfo = {}
+) {
   await ensureLogsDir();
 
   const logEntry = {
     timestamp: new Date().toISOString(),
     id: generateId(),
+    models: {
+      storyModel: modelInfo.storyModel || "unknown",
+      evaluationModel: modelInfo.evaluationModel || "unknown",
+    },
     performance: {
       timeToFirstToken: performanceStats.timeToFirstToken,
       totalTime: performanceStats.totalTime,
@@ -93,7 +102,7 @@ export async function getEvaluationLogs() {
 }
 
 // Get evaluation statistics
-export async function getEvaluationStats() {
+export async function getEvaluationStats(modelFilter = null) {
   const logs = await getEvaluationLogs();
 
   if (logs.length === 0) {
@@ -102,16 +111,229 @@ export async function getEvaluationStats() {
       averageScores: {},
       performanceStats: {},
       recentEvaluations: [],
+      modelBreakdown: {},
     };
   }
 
+  // Filter logs by model if specified
+  const filteredLogs = modelFilter
+    ? logs.filter(
+        (log) =>
+          log.models?.storyModel === modelFilter ||
+          log.models?.evaluationModel === modelFilter
+      )
+    : logs;
+
+  // Get model breakdown statistics with enhanced tracking
+  const modelBreakdown = {};
+
+  // Initialize model tracking structures
+  logs.forEach((log) => {
+    if (log.models) {
+      const storyModel = log.models.storyModel || "unknown";
+      const evaluationModel = log.models.evaluationModel || "unknown";
+
+      // Initialize story model tracking
+      if (!modelBreakdown[storyModel]) {
+        modelBreakdown[storyModel] = {
+          type: "story",
+          storyGenerations: 0,
+          evaluations: 0,
+          successfulEvaluations: 0,
+          failedEvaluations: 0,
+          totalEvaluations: 0,
+          averageScores: {},
+          averagePerformance: {},
+          averageTokenUsage: {},
+          lastUsed: null,
+        };
+      }
+
+      // Initialize evaluation model tracking
+      if (!modelBreakdown[evaluationModel]) {
+        modelBreakdown[evaluationModel] = {
+          type: "evaluation",
+          storyGenerations: 0,
+          evaluations: 0,
+          successfulEvaluations: 0,
+          failedEvaluations: 0,
+          totalEvaluations: 0,
+          averageScores: {},
+          averagePerformance: {},
+          averageTokenUsage: {},
+          lastUsed: null,
+        };
+      }
+
+      // Track usage counts and last used timestamp
+      const logTimestamp = new Date(log.timestamp);
+
+      modelBreakdown[storyModel].storyGenerations++;
+      modelBreakdown[storyModel].totalEvaluations++;
+      if (
+        !modelBreakdown[storyModel].lastUsed ||
+        logTimestamp > new Date(modelBreakdown[storyModel].lastUsed)
+      ) {
+        modelBreakdown[storyModel].lastUsed = log.timestamp;
+      }
+
+      modelBreakdown[evaluationModel].evaluations++;
+      modelBreakdown[evaluationModel].totalEvaluations++;
+      if (
+        !modelBreakdown[evaluationModel].lastUsed ||
+        logTimestamp > new Date(modelBreakdown[evaluationModel].lastUsed)
+      ) {
+        modelBreakdown[evaluationModel].lastUsed = log.timestamp;
+      }
+
+      // Track successful vs failed evaluations
+      if (
+        log.evaluation &&
+        !log.evaluation.error &&
+        log.evaluation.overallScore
+      ) {
+        modelBreakdown[evaluationModel].successfulEvaluations++;
+      } else {
+        modelBreakdown[evaluationModel].failedEvaluations++;
+      }
+    }
+  });
+
+  // Calculate detailed statistics per model
+  Object.keys(modelBreakdown).forEach((model) => {
+    const modelData = modelBreakdown[model];
+
+    // Get logs for this specific model (either as story or evaluation model)
+    const modelLogs = logs.filter(
+      (log) =>
+        log.models?.storyModel === model ||
+        log.models?.evaluationModel === model
+    );
+
+    // Get successful evaluation logs for this evaluation model
+    const successfulEvaluationLogs = logs.filter(
+      (log) =>
+        log.models?.evaluationModel === model &&
+        log.evaluation &&
+        !log.evaluation.error &&
+        log.evaluation.overallScore
+    );
+
+    // Calculate average scores for evaluation models
+    if (successfulEvaluationLogs.length > 0) {
+      const scoreFields = [
+        "contentQuality",
+        "writingStyle",
+        "creativity",
+        "emotionalImpact",
+      ];
+
+      scoreFields.forEach((field) => {
+        const scores = successfulEvaluationLogs
+          .map((log) => log.evaluation[field]?.score)
+          .filter((score) => typeof score === "number");
+
+        if (scores.length > 0) {
+          modelData.averageScores[field] =
+            scores.reduce((sum, score) => sum + score, 0) / scores.length;
+        }
+      });
+
+      const overallScores = successfulEvaluationLogs
+        .map((log) => log.evaluation.overallScore)
+        .filter((score) => typeof score === "number");
+
+      if (overallScores.length > 0) {
+        modelData.averageScores.overall =
+          overallScores.reduce((sum, score) => sum + score, 0) /
+          overallScores.length;
+      }
+    }
+
+    // Calculate average performance metrics
+    if (modelLogs.length > 0) {
+      const performances = modelLogs
+        .map((log) => log.performance)
+        .filter((p) => p);
+
+      if (performances.length > 0) {
+        modelData.averagePerformance = {
+          timeToFirstToken:
+            performances.reduce(
+              (sum, p) => sum + (p.timeToFirstToken || 0),
+              0
+            ) / performances.length,
+          totalTime:
+            performances.reduce((sum, p) => sum + (p.totalTime || 0), 0) /
+            performances.length,
+          evaluationTime:
+            performances.reduce((sum, p) => sum + (p.evaluationTime || 0), 0) /
+            performances.length,
+        };
+      }
+    }
+
+    // Calculate average token usage
+    const tokenUsageLogs = modelLogs.filter((log) => log.tokenUsage);
+    if (tokenUsageLogs.length > 0) {
+      modelData.averageTokenUsage = {
+        totalTokens:
+          tokenUsageLogs.reduce(
+            (sum, log) => sum + (log.tokenUsage.total?.total_tokens || 0),
+            0
+          ) / tokenUsageLogs.length,
+        promptTokens:
+          tokenUsageLogs.reduce(
+            (sum, log) => sum + (log.tokenUsage.total?.prompt_tokens || 0),
+            0
+          ) / tokenUsageLogs.length,
+        completionTokens:
+          tokenUsageLogs.reduce(
+            (sum, log) => sum + (log.tokenUsage.total?.completion_tokens || 0),
+            0
+          ) / tokenUsageLogs.length,
+      };
+
+      // Calculate story-specific token usage for story models
+      const storyTokenLogs = tokenUsageLogs.filter(
+        (log) => log.models?.storyModel === model && log.tokenUsage.story
+      );
+      if (storyTokenLogs.length > 0) {
+        modelData.averageTokenUsage.storyTokens =
+          storyTokenLogs.reduce(
+            (sum, log) => sum + (log.tokenUsage.story.total_tokens || 0),
+            0
+          ) / storyTokenLogs.length;
+      }
+
+      // Calculate evaluation-specific token usage for evaluation models
+      const evalTokenLogs = tokenUsageLogs.filter(
+        (log) =>
+          log.models?.evaluationModel === model && log.tokenUsage.evaluation
+      );
+      if (evalTokenLogs.length > 0) {
+        modelData.averageTokenUsage.evaluationTokens =
+          evalTokenLogs.reduce(
+            (sum, log) => sum + (log.tokenUsage.evaluation.total_tokens || 0),
+            0
+          ) / evalTokenLogs.length;
+      }
+    }
+
+    // Calculate success rate
+    modelData.successRate =
+      modelData.totalEvaluations > 0
+        ? (modelData.successfulEvaluations / modelData.totalEvaluations) * 100
+        : 0;
+  });
+
   // Filter out failed evaluations for score calculations
-  const successfulEvaluations = logs.filter(
+  const successfulEvaluations = filteredLogs.filter(
     (log) =>
       log.evaluation && !log.evaluation.error && log.evaluation.overallScore
   );
 
-  const totalEvaluations = logs.length;
+  const totalEvaluations = filteredLogs.length;
   const successfulCount = successfulEvaluations.length;
 
   // Calculate average scores
@@ -148,14 +370,14 @@ export async function getEvaluationStats() {
 
   // Calculate performance statistics
   const performanceStats = {};
-  if (logs.length > 0) {
-    const timeToFirstTokens = logs
+  if (filteredLogs.length > 0) {
+    const timeToFirstTokens = filteredLogs
       .map((log) => log.performance.timeToFirstToken)
       .filter((t) => t);
-    const totalTimes = logs
+    const totalTimes = filteredLogs
       .map((log) => log.performance.totalTime)
       .filter((t) => t);
-    const evaluationTimes = logs
+    const evaluationTimes = filteredLogs
       .map((log) => log.performance.evaluationTime)
       .filter((t) => t);
 
@@ -179,7 +401,7 @@ export async function getEvaluationStats() {
 
   // Calculate token usage statistics
   const tokenStats = {};
-  const logsWithTokens = logs.filter(
+  const logsWithTokens = filteredLogs.filter(
     (log) => log.tokenUsage && log.tokenUsage.total
   );
   if (logsWithTokens.length > 0) {
@@ -228,7 +450,7 @@ export async function getEvaluationStats() {
   }
 
   // Get recent evaluations (last 10)
-  const recentEvaluations = logs.slice(-10).reverse();
+  const recentEvaluations = filteredLogs.slice(-10).reverse();
 
   return {
     totalEvaluations,
@@ -238,6 +460,8 @@ export async function getEvaluationStats() {
     performanceStats,
     tokenStats,
     recentEvaluations,
+    modelBreakdown,
+    appliedFilter: modelFilter,
   };
 }
 

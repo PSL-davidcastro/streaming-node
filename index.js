@@ -4,9 +4,13 @@ dotenv.config();
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import express from "express";
-import { generateStream } from "./llm/llm.js"; // Ensure this path is correct
-import { generateEvaluation } from "./llm/llmEvaluation.js"; // Ensure this path is correct
-import { logEvaluation, getEvaluationStats } from "./llm/evaluationLogger.js";
+import { generateStream, getStoryModel } from "./llm/llm.js"; // Ensure this path is correct
+import { generateEvaluation, getEvaluationModel } from "./llm/llmEvaluation.js"; // Ensure this path is correct
+import {
+  logEvaluation,
+  getEvaluationStats,
+  getEvaluationLogs,
+} from "./llm/evaluationLogger.js";
 import { time } from "node:console";
 
 const delayMs = 500;
@@ -93,7 +97,11 @@ app.get("/llm", async (req, res) => {
 
     // Log evaluation data for performance tracking
     try {
-      await logEvaluation(evaluation, finalStats, output);
+      const modelInfo = {
+        storyModel: getStoryModel(),
+        evaluationModel: getEvaluationModel(),
+      };
+      await logEvaluation(evaluation, finalStats, output, modelInfo);
     } catch (logError) {
       console.error("Failed to log evaluation:", logError);
       // Don't fail the request if logging fails
@@ -119,11 +127,44 @@ app.get("/llm", async (req, res) => {
 // API endpoint to get evaluation statistics
 app.get("/api/evaluation-stats", async (req, res) => {
   try {
-    const stats = await getEvaluationStats();
+    const modelFilter = req.query.model || null;
+    const stats = await getEvaluationStats(modelFilter);
     res.json(stats);
   } catch (error) {
     console.error("Error fetching evaluation stats:", error);
     res.status(500).json({ error: "Failed to fetch evaluation statistics" });
+  }
+});
+
+// API endpoint to get available models
+app.get("/api/models", async (req, res) => {
+  try {
+    const logs = await getEvaluationLogs();
+    const models = new Set();
+
+    logs.forEach((log) => {
+      if (log.models) {
+        if (log.models.storyModel) models.add(log.models.storyModel);
+        if (log.models.evaluationModel) models.add(log.models.evaluationModel);
+      }
+    });
+
+    // Add current models even if not in logs yet
+    models.add(getStoryModel());
+    models.add(getEvaluationModel());
+
+    res.json({
+      currentModels: {
+        story: getStoryModel(),
+        evaluation: getEvaluationModel(),
+      },
+      availableModels: Array.from(models).filter(
+        (model) => model !== "unknown"
+      ),
+    });
+  } catch (error) {
+    console.error("Error fetching models:", error);
+    res.status(500).json({ error: "Failed to fetch models" });
   }
 });
 

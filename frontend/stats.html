@@ -36,6 +36,10 @@
       }
       .nav {
         margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
       }
       .nav a {
         display: inline-block;
@@ -49,6 +53,31 @@
       }
       .nav a:hover {
         background: #0041a8;
+      }
+      .model-filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .model-filter label {
+        font-weight: 500;
+        color: #2c3e50;
+      }
+      .model-filter select {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        background: white;
+        cursor: pointer;
+      }
+      .current-filter {
+        background: #27ae60;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        margin-left: 10px;
       }
       .grid {
         display: grid;
@@ -217,6 +246,17 @@
 
       <div class="nav">
         <a href="/">← Back to Story Generator</a>
+        <div class="model-filter">
+          <label for="modelSelect">Filter by Model:</label>
+          <select id="modelSelect" onchange="filterByModel()">
+            <option value="">All Models</option>
+          </select>
+          <span
+            id="currentFilter"
+            class="current-filter"
+            style="display: none"
+          ></span>
+        </div>
         <button class="refresh-btn" id="refreshBtn" onclick="loadStats()">
           <span class="spinner" id="spinner" style="display: none"></span>
           Refresh Data
@@ -286,6 +326,14 @@
             </div>
           </div>
 
+          <!-- Model Breakdown -->
+          <div class="card full-expand">
+            <h2>🤖 Model Breakdown</h2>
+            <div id="modelBreakdown">
+              <p>Loading model breakdown...</p>
+            </div>
+          </div>
+
           <!-- Score Breakdown -->
           <div class="card full-expand">
             <h2>🎯 Average Scores</h2>
@@ -317,12 +365,51 @@
     </div>
 
     <script>
+      function filterByModel() {
+        const modelSelect = document.getElementById("modelSelect");
+        const currentFilter = document.getElementById("currentFilter");
+        const selectedModel = modelSelect.value;
+
+        if (selectedModel) {
+          currentFilter.textContent = `Filtered: ${selectedModel}`;
+          currentFilter.style.display = "inline";
+        } else {
+          currentFilter.style.display = "none";
+        }
+
+        loadStats();
+      }
+
+      async function loadModels() {
+        try {
+          const response = await fetch("/api/models");
+          if (response.ok) {
+            const data = await response.json();
+            const modelSelect = document.getElementById("modelSelect");
+
+            // Clear existing options except "All Models"
+            modelSelect.innerHTML = '<option value="">All Models</option>';
+
+            // Add available models
+            data.availableModels.forEach((model) => {
+              const option = document.createElement("option");
+              option.value = model;
+              option.textContent = model;
+              modelSelect.appendChild(option);
+            });
+          }
+        } catch (error) {
+          console.error("Error loading models:", error);
+        }
+      }
+
       async function loadStats() {
         const dashboard = document.getElementById("dashboard");
         const loading = document.getElementById("loading");
         const emptyState = document.getElementById("emptyState");
         const refreshBtn = document.getElementById("refreshBtn");
         const spinner = document.getElementById("spinner");
+        const modelSelect = document.getElementById("modelSelect");
 
         // Show loading state
         dashboard.style.display = "none";
@@ -332,7 +419,11 @@
         spinner.style.display = "inline-block";
 
         try {
-          const response = await fetch("/api/evaluation-stats");
+          const selectedModel = modelSelect.value;
+          const url = selectedModel
+            ? `/api/evaluation-stats?model=${encodeURIComponent(selectedModel)}`
+            : "/api/evaluation-stats";
+          const response = await fetch(url);
           if (!response.ok) {
             throw new Error("Failed to fetch statistics");
           }
@@ -422,11 +513,70 @@
           document.getElementById("avgEvaluationTokens").textContent = "-";
         }
 
+        // Model breakdown
+        populateModelBreakdown(stats.modelBreakdown);
+
         // Score breakdown
         populateScoreBreakdown(stats.averageScores);
 
         // Recent evaluations
         populateRecentEvaluations(stats.recentEvaluations);
+      }
+
+      function populateModelBreakdown(modelBreakdown) {
+        const container = document.getElementById("modelBreakdown");
+        container.innerHTML = "";
+
+        if (!modelBreakdown || Object.keys(modelBreakdown).length === 0) {
+          container.innerHTML =
+            '<p style="text-align: center; color: #666;">No data available for selected model.</p>';
+          return;
+        }
+
+        Object.entries(modelBreakdown).forEach(([model, data]) => {
+          const modelDiv = document.createElement("div");
+          modelDiv.className = "model-stat-item";
+          modelDiv.style.marginBottom = "16px";
+
+          const successRate =
+            data.totalEvaluations > 0
+              ? Math.round(
+                  (data.successfulEvaluations / data.totalEvaluations) * 100
+                )
+              : 0;
+
+          modelDiv.innerHTML = `
+            <div style="font-weight: bold; color: #2980b9;">${model}</div>
+            <div class="stat-grid" style="margin-top: 8px;">
+              <div class="stat-item">
+                <div class="stat-value">${data.totalEvaluations}</div>
+                <div class="stat-label">Total Evaluations</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">${successRate}%</div>
+                <div class="stat-label">Success Rate</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">${
+                  data.averageScores?.overall
+                    ? data.averageScores.overall.toFixed(1)
+                    : "-"
+                }</div>
+                <div class="stat-label">Avg Score</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">${
+                  data.averagePerformance?.totalTime
+                    ? Math.round(data.averagePerformance.totalTime)
+                    : "-"
+                }ms</div>
+                <div class="stat-label">Avg Time</div>
+              </div>
+            </div>
+          `;
+
+          container.appendChild(modelDiv);
+        });
       }
 
       function populateScoreBreakdown(averageScores) {
@@ -530,8 +680,11 @@
         });
       }
 
-      // Load stats when page loads
-      document.addEventListener("DOMContentLoaded", loadStats);
+      // Load stats and models when page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        loadModels();
+        loadStats();
+      });
 
       // Auto-refresh every 30 seconds if page is visible
       setInterval(() => {

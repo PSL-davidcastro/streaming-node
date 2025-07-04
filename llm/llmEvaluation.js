@@ -7,6 +7,9 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Model used for evaluation
+const EVALUATION_MODEL = "gpt-4.1-mini-2025-04-14";
+
 export const generateEvaluation = async (story) => {
   console.log("Generating evaluation for the story...");
   if (!story || typeof story !== "string") {
@@ -20,7 +23,7 @@ export const generateEvaluation = async (story) => {
 
   try {
     const response = await client.chat.completions.create({
-      model: "gpt-4",
+      model: EVALUATION_MODEL,
       messages: [
         {
           role: "system",
@@ -57,3 +60,5 @@ export const generateEvaluation = async (story) => {
     throw error;
   }
 };
+
+export const getEvaluationModel = () => EVALUATION_MODEL;
