@@ -83,6 +83,26 @@
         flex-wrap: wrap;
         gap: 10px;
       }
+      .model-selection {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .model-selection label {
+        font-weight: 500;
+        color: #2c3e50;
+        font-size: 0.9rem;
+      }
+      .model-selection select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        background: white;
+        cursor: pointer;
+        min-width: 200px;
+      }
       .evaluation {
         margin-top: 24px;
         background: #f8fffe;
@@ -154,6 +174,17 @@
   <body>
     <div class="container">
       <h1>LLM Streaming Demo</h1>
+      <div class="model-selection">
+        <label for="modelSelect">Story Model:</label>
+        <select id="modelSelect">
+          <option value="o4-mini-2025-04-16" selected>
+            o4-mini-2025-04-16 (Current Default)
+          </option>
+          <option value="gpt-4.1-2025-04-14">GPT-4.1</option>
+          <option value="gpt-4.1-mini-2025-04-14">GPT-4.1 Mini</option>
+          <option value="gpt-4.1-nano-2025-04-14">GPT-4.1 Nano</option>
+        </select>
+      </div>
       <div class="controls">
         <button id="fetchBtn">Generate Story</button>
         <a href="/stats" class="nav-link">📊 View Performance Stats</a>
@@ -183,6 +214,7 @@
       const criteriaDiv = document.getElementById("criteria");
       const overallScoreDiv = document.getElementById("overallScore");
       const summaryDiv = document.getElementById("summary");
+      const modelSelect = document.getElementById("modelSelect");
 
       function displayEvaluation(evaluation) {
         if (!evaluation || evaluation.error) {
@@ -231,7 +263,11 @@
         evaluationDiv.style.display = "none";
         btn.disabled = true;
         try {
-          const response = await fetch("/llm");
+          const modelSelect = document.getElementById("modelSelect");
+          const selectedModel = modelSelect.value;
+          const response = await fetch(
+            `/llm?model=${encodeURIComponent(selectedModel)}`
+          );
           if (!response.ok || !response.body) {
             throw new Error("Failed to fetch LLM stream");
           }
@@ -254,7 +290,7 @@
                 const statsStr = buffer.slice(markerIdx + marker.length);
                 try {
                   const stats = JSON.parse(statsStr);
-                  let statsHtml = `<b>Stats:</b><br>Time to first token: <b>${stats.timeToFirstToken} ms</b><br>Total time: <b>${stats.totalTime} ms</b>`;
+                  let statsHtml = `<b>Model:</b> ${selectedModel}<br><b>Stats:</b><br>Time to first token: <b>${stats.timeToFirstToken} ms</b><br>Total time: <b>${stats.totalTime} ms</b>`;
                   if (stats.evaluationTime) {
                     statsHtml += `<br>Evaluation time: <b>${stats.evaluationTime} ms</b>`;
                   }

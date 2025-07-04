@@ -44,27 +44,40 @@ app.get("/stream", async (req, res) => {
 
 app.get("/llm", async (req, res) => {
   try {
+    // Get the selected model from query parameters
+    const selectedModel = req.query.model || "o4-mini-2025-04-16";
+    console.log(`Using model: ${selectedModel} for story generation`);
+
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     const startTime = Date.now();
     let timeToFirstToken = 0;
     let output = "";
     let storyTokenUsage = null;
-    const stream = await generateStream();
-    for await (const chunk of stream) {
-      if (timeToFirstToken === 0) {
-        timeToFirstToken = Date.now() - startTime;
-      }
 
-      const content = chunk.choices?.[0]?.delta?.content;
-      if (content) {
-        res.write(content);
-        output += content;
-      }
+    try {
+      const stream = await generateStream(selectedModel);
+      for await (const chunk of stream) {
+        if (timeToFirstToken === 0) {
+          timeToFirstToken = Date.now() - startTime;
+        }
 
-      // Capture token usage from the final chunk
-      if (chunk.usage) {
-        storyTokenUsage = chunk.usage;
+        const content = chunk.choices?.[0]?.delta?.content;
+        if (content) {
+          res.write(content);
+          output += content;
+        }
+
+        // Capture token usage from the final chunk
+        if (chunk.usage) {
+          storyTokenUsage = chunk.usage;
+        }
       }
+    } catch (modelError) {
+      console.error("Error with model:", selectedModel, modelError);
+      res
+        .status(400)
+        .end(`Error with model "${selectedModel}": ${modelError.message}`);
+      return;
     }
     const stats = {
       timeToFirstToken: timeToFirstToken,
@@ -98,7 +111,7 @@ app.get("/llm", async (req, res) => {
     // Log evaluation data for performance tracking
     try {
       const modelInfo = {
-        storyModel: getStoryModel(),
+        storyModel: selectedModel,
         evaluationModel: getEvaluationModel(),
       };
       await logEvaluation(evaluation, finalStats, output, modelInfo);
@@ -113,6 +126,7 @@ app.get("/llm", async (req, res) => {
     const elapsedTime = Date.now() - startTime;
     console.log({
       endpoint: "/llm",
+      selectedModel: selectedModel,
       timeToFirstToken: `${timeToFirstToken} ms`,
       totalTime: `${elapsedTime} ms`,
       evaluationTime: `${Date.now() - evaluationStartTime} ms`,

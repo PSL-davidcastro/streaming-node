@@ -7,12 +7,12 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Model used for story generation
-const STORY_MODEL = "o4-mini-2025-04-16";
+// Model used for story generation (default)
+const DEFAULT_STORY_MODEL = "o4-mini-2025-04-16";
 
-export const generateStream = async () => {
+export const generateStream = async (model = DEFAULT_STORY_MODEL) => {
   const stream = await client.chat.completions.create({
-    model: STORY_MODEL,
+    model: model,
     messages: [
       {
         role: "user",
@@ -25,4 +25,4 @@ export const generateStream = async () => {
   return stream;
 };
 
-export const getStoryModel = () => STORY_MODEL;
+export const getStoryModel = () => DEFAULT_STORY_MODEL;
