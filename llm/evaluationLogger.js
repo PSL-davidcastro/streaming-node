@@ -25,6 +25,21 @@ export async function logEvaluation(evaluationData, performanceStats, story) {
       totalTime: performanceStats.totalTime,
       evaluationTime: performanceStats.evaluationTime,
     },
+    tokenUsage: {
+      story: performanceStats.storyTokenUsage || null,
+      evaluation: performanceStats.evaluationTokenUsage || null,
+      total: {
+        prompt_tokens:
+          (performanceStats.storyTokenUsage?.prompt_tokens || 0) +
+          (performanceStats.evaluationTokenUsage?.prompt_tokens || 0),
+        completion_tokens:
+          (performanceStats.storyTokenUsage?.completion_tokens || 0) +
+          (performanceStats.evaluationTokenUsage?.completion_tokens || 0),
+        total_tokens:
+          (performanceStats.storyTokenUsage?.total_tokens || 0) +
+          (performanceStats.evaluationTokenUsage?.total_tokens || 0),
+      },
+    },
     evaluation: evaluationData,
     storyLength: story ? story.length : 0,
     wordCount: story ? story.split(/\s+/).length : 0,
@@ -162,6 +177,56 @@ export async function getEvaluationStats() {
         : 0;
   }
 
+  // Calculate token usage statistics
+  const tokenStats = {};
+  const logsWithTokens = logs.filter(
+    (log) => log.tokenUsage && log.tokenUsage.total
+  );
+  if (logsWithTokens.length > 0) {
+    const totalPromptTokens = logsWithTokens.reduce(
+      (sum, log) => sum + (log.tokenUsage.total.prompt_tokens || 0),
+      0
+    );
+    const totalCompletionTokens = logsWithTokens.reduce(
+      (sum, log) => sum + (log.tokenUsage.total.completion_tokens || 0),
+      0
+    );
+    const totalTokens = logsWithTokens.reduce(
+      (sum, log) => sum + (log.tokenUsage.total.total_tokens || 0),
+      0
+    );
+
+    tokenStats.averagePromptTokens = totalPromptTokens / logsWithTokens.length;
+    tokenStats.averageCompletionTokens =
+      totalCompletionTokens / logsWithTokens.length;
+    tokenStats.averageTotalTokens = totalTokens / logsWithTokens.length;
+    tokenStats.totalPromptTokens = totalPromptTokens;
+    tokenStats.totalCompletionTokens = totalCompletionTokens;
+    tokenStats.totalTokensUsed = totalTokens;
+
+    // Calculate story vs evaluation token breakdown
+    const storyTokens = logsWithTokens.filter((log) => log.tokenUsage.story);
+    const evaluationTokens = logsWithTokens.filter(
+      (log) => log.tokenUsage.evaluation
+    );
+
+    if (storyTokens.length > 0) {
+      tokenStats.averageStoryTokens =
+        storyTokens.reduce(
+          (sum, log) => sum + (log.tokenUsage.story.total_tokens || 0),
+          0
+        ) / storyTokens.length;
+    }
+
+    if (evaluationTokens.length > 0) {
+      tokenStats.averageEvaluationTokens =
+        evaluationTokens.reduce(
+          (sum, log) => sum + (log.tokenUsage.evaluation.total_tokens || 0),
+          0
+        ) / evaluationTokens.length;
+    }
+  }
+
   // Get recent evaluations (last 10)
   const recentEvaluations = logs.slice(-10).reverse();
 
@@ -171,6 +236,7 @@ export async function getEvaluationStats() {
     failedEvaluations: totalEvaluations - successfulCount,
     averageScores,
     performanceStats,
+    tokenStats,
     recentEvaluations,
   };
 }

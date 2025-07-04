@@ -258,6 +258,38 @@
                   if (stats.evaluationTime) {
                     statsHtml += `<br>Evaluation time: <b>${stats.evaluationTime} ms</b>`;
                   }
+
+                  // Add token usage information
+                  if (stats.storyTokenUsage) {
+                    statsHtml += `<br><b>Story Tokens:</b> ${
+                      stats.storyTokenUsage.total_tokens || "N/A"
+                    }`;
+                    if (
+                      stats.storyTokenUsage.prompt_tokens &&
+                      stats.storyTokenUsage.completion_tokens
+                    ) {
+                      statsHtml += ` (${stats.storyTokenUsage.prompt_tokens} prompt + ${stats.storyTokenUsage.completion_tokens} completion)`;
+                    }
+                  }
+                  if (stats.evaluationTokenUsage) {
+                    statsHtml += `<br><b>Evaluation Tokens:</b> ${
+                      stats.evaluationTokenUsage.total_tokens || "N/A"
+                    }`;
+                    if (
+                      stats.evaluationTokenUsage.prompt_tokens &&
+                      stats.evaluationTokenUsage.completion_tokens
+                    ) {
+                      statsHtml += ` (${stats.evaluationTokenUsage.prompt_tokens} prompt + ${stats.evaluationTokenUsage.completion_tokens} completion)`;
+                    }
+                  }
+
+                  const totalTokens =
+                    (stats.storyTokenUsage?.total_tokens || 0) +
+                    (stats.evaluationTokenUsage?.total_tokens || 0);
+                  if (totalTokens > 0) {
+                    statsHtml += `<br><b>Total Tokens:</b> ${totalTokens}`;
+                  }
+
                   statsDiv.innerHTML = statsHtml;
 
                   // Display evaluation if available

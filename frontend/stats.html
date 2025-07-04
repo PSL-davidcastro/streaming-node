@@ -263,6 +263,29 @@
             </div>
           </div>
 
+          <!-- Token Usage Metrics -->
+          <div class="card">
+            <h2>🪙 Token Usage</h2>
+            <div class="stat-grid">
+              <div class="stat-item">
+                <div class="stat-value" id="avgTotalTokens">-</div>
+                <div class="stat-label">Avg Total Tokens</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="totalTokensUsed">-</div>
+                <div class="stat-label">Total Tokens Used</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="avgStoryTokens">-</div>
+                <div class="stat-label">Avg Story Tokens</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="avgEvaluationTokens">-</div>
+                <div class="stat-label">Avg Evaluation Tokens</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Score Breakdown -->
           <div class="card">
             <h2>🎯 Average Scores</h2>
@@ -367,6 +390,37 @@
           .performanceStats.averageEvaluationTime
           ? `${Math.round(stats.performanceStats.averageEvaluationTime)}ms`
           : "-";
+
+        // Token usage metrics
+        if (stats.tokenStats) {
+          document.getElementById("avgTotalTokens").textContent = stats
+            .tokenStats.averageTotalTokens
+            ? Math.round(stats.tokenStats.averageTotalTokens).toLocaleString()
+            : "-";
+
+          document.getElementById("totalTokensUsed").textContent = stats
+            .tokenStats.totalTokensUsed
+            ? stats.tokenStats.totalTokensUsed.toLocaleString()
+            : "-";
+
+          document.getElementById("avgStoryTokens").textContent = stats
+            .tokenStats.averageStoryTokens
+            ? Math.round(stats.tokenStats.averageStoryTokens).toLocaleString()
+            : "-";
+
+          document.getElementById("avgEvaluationTokens").textContent = stats
+            .tokenStats.averageEvaluationTokens
+            ? Math.round(
+                stats.tokenStats.averageEvaluationTokens
+              ).toLocaleString()
+            : "-";
+        } else {
+          // If no token stats available, show dashes
+          document.getElementById("avgTotalTokens").textContent = "-";
+          document.getElementById("totalTokensUsed").textContent = "-";
+          document.getElementById("avgStoryTokens").textContent = "-";
+          document.getElementById("avgEvaluationTokens").textContent = "-";
+        }
 
         // Score breakdown
         populateScoreBreakdown(stats.averageScores);

@@ -35,15 +35,21 @@ export const generateEvaluation = async (story) => {
     });
 
     const evaluationText = response.choices[0].message.content;
+    const usage = response.usage;
 
     // Try to parse as JSON, fallback to text if parsing fails
     try {
-      return JSON.parse(evaluationText);
+      const evaluationData = JSON.parse(evaluationText);
+      return {
+        ...evaluationData,
+        tokenUsage: usage,
+      };
     } catch (parseError) {
       console.warn("Failed to parse evaluation as JSON, returning as text");
       return {
         error: "Failed to parse evaluation",
         rawResponse: evaluationText,
+        tokenUsage: usage,
       };
     }
   } catch (error) {

@@ -44,6 +44,7 @@ app.get("/llm", async (req, res) => {
     const startTime = Date.now();
     let timeToFirstToken = 0;
     let output = "";
+    let storyTokenUsage = null;
     const stream = await generateStream();
     for await (const chunk of stream) {
       if (timeToFirstToken === 0) {
@@ -55,10 +56,16 @@ app.get("/llm", async (req, res) => {
         res.write(content);
         output += content;
       }
+
+      // Capture token usage from the final chunk
+      if (chunk.usage) {
+        storyTokenUsage = chunk.usage;
+      }
     }
     const stats = {
       timeToFirstToken: timeToFirstToken,
       totalTime: Date.now() - startTime,
+      storyTokenUsage: storyTokenUsage,
     };
 
     // Generate evaluation
@@ -81,6 +88,7 @@ app.get("/llm", async (req, res) => {
       ...stats,
       evaluationTime: Date.now() - evaluationStartTime,
       evaluation: evaluation,
+      evaluationTokenUsage: evaluation?.tokenUsage || null,
     };
 
     // Log evaluation data for performance tracking
