@@ -10,13 +10,16 @@ const client = new OpenAI({
 // Model used for story generation (default)
 const DEFAULT_STORY_MODEL = "o4-mini-2025-04-16";
 
-export const generateStream = async (model = DEFAULT_STORY_MODEL) => {
+export const generateStream = async (
+  model = DEFAULT_STORY_MODEL,
+  promptComplexity = "complex"
+) => {
   const stream = await client.chat.completions.create({
     model: model,
     messages: [
       {
         role: "user",
-        content: prompts.longStory,
+        content: prompts.getStoryPrompt(promptComplexity),
       },
     ],
     stream: true,

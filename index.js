@@ -6,6 +6,7 @@ import { pipeline } from "node:stream/promises";
 import express from "express";
 import { generateStream, getStoryModel } from "./llm/llm.js"; // Ensure this path is correct
 import { generateEvaluation, getEvaluationModel } from "./llm/llmEvaluation.js"; // Ensure this path is correct
+import prompts from "./llm/prompts.js"; // Import prompts for complexity levels
 import {
   logEvaluation,
   getEvaluationStats,
@@ -45,9 +46,14 @@ app.get("/stream", async (req, res) => {
 
 app.get("/llm", async (req, res) => {
   try {
-    // Get the selected model from query parameters
+    // Get the selected model and complexity from query parameters
     const selectedModel = req.query.model || "o4-mini-2025-04-16";
+    const promptComplexity = req.query.promptComplexity || "complex";
+    const evaluationComplexity = req.query.evaluationComplexity || "complex";
+
     console.log(`Using model: ${selectedModel} for story generation`);
+    console.log(`Using prompt complexity: ${promptComplexity}`);
+    console.log(`Using evaluation complexity: ${evaluationComplexity}`);
 
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     const startTime = Date.now();
@@ -56,7 +62,7 @@ app.get("/llm", async (req, res) => {
     let storyTokenUsage = null;
 
     try {
-      const stream = await generateStream(selectedModel);
+      const stream = await generateStream(selectedModel, promptComplexity);
       for await (const chunk of stream) {
         if (timeToFirstToken === 0) {
           timeToFirstToken = Date.now() - startTime;
@@ -91,7 +97,7 @@ app.get("/llm", async (req, res) => {
     const evaluationStartTime = Date.now();
     let evaluation = null;
     try {
-      evaluation = await generateEvaluation(output);
+      evaluation = await generateEvaluation(output, evaluationComplexity);
       console.log(
         "Evaluation completed in",
         Date.now() - evaluationStartTime,
@@ -126,7 +132,17 @@ app.get("/llm", async (req, res) => {
         storyModel: selectedModel,
         evaluationModel: getEvaluationModel(),
       };
-      await logEvaluation(evaluation, finalStats, output, modelInfo);
+      const complexityInfo = {
+        promptComplexity: promptComplexity,
+        evaluationComplexity: evaluationComplexity,
+      };
+      await logEvaluation(
+        evaluation,
+        finalStats,
+        output,
+        modelInfo,
+        complexityInfo
+      );
     } catch (logError) {
       console.error("Failed to log evaluation:", logError);
       // Don't fail the request if logging fails
@@ -193,6 +209,17 @@ app.get("/api/models", async (req, res) => {
   } catch (error) {
     console.error("Error fetching models:", error);
     res.status(500).json({ error: "Failed to fetch models" });
+  }
+});
+
+// API endpoint to get available prompt complexities
+app.get("/api/prompt-complexities", async (req, res) => {
+  try {
+    const complexities = prompts.getAvailableComplexities();
+    res.json(complexities);
+  } catch (error) {
+    console.error("Error fetching prompt complexities:", error);
+    res.status(500).json({ error: "Failed to fetch prompt complexities" });
   }
 });
 

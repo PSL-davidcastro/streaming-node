@@ -22,7 +22,8 @@ export async function logEvaluation(
   evaluationData,
   performanceStats,
   story,
-  modelInfo = {}
+  modelInfo = {},
+  complexityInfo = {}
 ) {
   await ensureLogsDir();
 
@@ -32,6 +33,10 @@ export async function logEvaluation(
     models: {
       storyModel: modelInfo.storyModel || "unknown",
       evaluationModel: modelInfo.evaluationModel || "unknown",
+    },
+    complexity: {
+      promptComplexity: complexityInfo.promptComplexity || "complex",
+      evaluationComplexity: complexityInfo.evaluationComplexity || "complex",
     },
     performance: {
       timeToFirstToken: performanceStats.timeToFirstToken,

@@ -10,16 +10,17 @@ const client = new OpenAI({
 // Model used for evaluation
 const EVALUATION_MODEL = "gpt-4.1-mini-2025-04-14";
 
-export const generateEvaluation = async (story) => {
+export const generateEvaluation = async (
+  story,
+  evaluationComplexity = "complex"
+) => {
   console.log("Generating evaluation for the story...");
   if (!story || typeof story !== "string") {
     throw new Error("Invalid story input. Please provide a valid string.");
   }
 
-  const userPrompt = prompts.evaluateLongStoryUserPrompt.replace(
-    "{{story}}",
-    story
-  );
+  const evaluationPrompts = prompts.getEvaluationPrompts(evaluationComplexity);
+  const userPrompt = evaluationPrompts.userPrompt.replace("{{story}}", story);
 
   try {
     const response = await client.chat.completions.create({
@@ -27,7 +28,7 @@ export const generateEvaluation = async (story) => {
       messages: [
         {
           role: "system",
-          content: prompts.evaluateLongStorySystemPrompt,
+          content: evaluationPrompts.systemPrompt,
         },
         {
           role: "user",
@@ -46,6 +47,7 @@ export const generateEvaluation = async (story) => {
       return {
         ...evaluationData,
         tokenUsage: usage,
+        evaluationComplexity: evaluationComplexity,
       };
     } catch (parseError) {
       console.warn("Failed to parse evaluation as JSON, returning as text");
@@ -53,6 +55,7 @@ export const generateEvaluation = async (story) => {
         error: "Failed to parse evaluation",
         rawResponse: evaluationText,
         tokenUsage: usage,
+        evaluationComplexity: evaluationComplexity,
       };
     }
   } catch (error) {

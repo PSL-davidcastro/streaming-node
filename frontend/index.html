@@ -103,6 +103,33 @@
         cursor: pointer;
         min-width: 200px;
       }
+      .complexity-selection {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .complexity-selection label {
+        font-weight: 500;
+        color: #2c3e50;
+        font-size: 0.9rem;
+      }
+      .complexity-selection select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        background: white;
+        cursor: pointer;
+        min-width: 200px;
+      }
+      .complexity-description {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 4px;
+        margin-left: 8px;
+        font-style: italic;
+      }
       .evaluation {
         margin-top: 24px;
         background: #f8fffe;
@@ -185,6 +212,24 @@
           <option value="gpt-4.1-nano-2025-04-14">GPT-4.1 Nano</option>
         </select>
       </div>
+      <div class="complexity-selection">
+        <label for="promptComplexitySelect">Story Complexity:</label>
+        <select id="promptComplexitySelect">
+          <option value="simple">Simple Story</option>
+          <option value="complex" selected>Complex Story</option>
+          <option value="advanced">Advanced Story</option>
+        </select>
+      </div>
+      <div id="promptDescription" class="complexity-description"></div>
+      <div class="complexity-selection">
+        <label for="evaluationComplexitySelect">Evaluation Complexity:</label>
+        <select id="evaluationComplexitySelect">
+          <option value="simple">Simple Evaluation</option>
+          <option value="complex" selected>Complex Evaluation</option>
+          <option value="advanced">Advanced Evaluation</option>
+        </select>
+      </div>
+      <div id="evaluationDescription" class="complexity-description"></div>
       <div class="controls">
         <button id="fetchBtn">Generate Story</button>
         <a href="/stats" class="nav-link">📊 View Performance Stats</a>
@@ -215,6 +260,67 @@
       const overallScoreDiv = document.getElementById("overallScore");
       const summaryDiv = document.getElementById("summary");
       const modelSelect = document.getElementById("modelSelect");
+      const promptComplexitySelect = document.getElementById(
+        "promptComplexitySelect"
+      );
+      const evaluationComplexitySelect = document.getElementById(
+        "evaluationComplexitySelect"
+      );
+      const promptDescriptionDiv = document.getElementById("promptDescription");
+      const evaluationDescriptionDiv = document.getElementById(
+        "evaluationDescription"
+      );
+
+      let complexitiesData = null;
+
+      // Load complexity options and descriptions
+      async function loadComplexities() {
+        try {
+          const response = await fetch("/api/prompt-complexities");
+          complexitiesData = await response.json();
+
+          // Update the description when selection changes
+          updatePromptDescription();
+          updateEvaluationDescription();
+        } catch (error) {
+          console.error("Failed to load complexities:", error);
+        }
+      }
+
+      function updatePromptDescription() {
+        if (!complexitiesData) return;
+        const selectedKey = promptComplexitySelect.value;
+        const complexity = complexitiesData.stories.find(
+          (c) => c.key === selectedKey
+        );
+        if (complexity) {
+          promptDescriptionDiv.textContent = complexity.description;
+        }
+      }
+
+      function updateEvaluationDescription() {
+        if (!complexitiesData) return;
+        const selectedKey = evaluationComplexitySelect.value;
+        const complexity = complexitiesData.evaluations.find(
+          (c) => c.key === selectedKey
+        );
+        if (complexity) {
+          evaluationDescriptionDiv.textContent = complexity.description;
+        }
+      }
+
+      // Add event listeners for complexity changes
+      promptComplexitySelect.addEventListener(
+        "change",
+        updatePromptDescription
+      );
+      evaluationComplexitySelect.addEventListener(
+        "change",
+        updateEvaluationDescription
+      );
+
+      // Load complexities on page load
+      loadComplexities();
 
       function displayEvaluation(evaluation) {
         if (!evaluation || evaluation.error) {
@@ -225,14 +331,30 @@
         // Clear previous content
         criteriaDiv.innerHTML = "";
 
-        // Display criteria scores
-        const criteria = [
-          { key: "contentQuality", name: "Content Quality" },
-          { key: "writingStyle", name: "Writing Style" },
-          { key: "creativity", name: "Creativity" },
-          { key: "emotionalImpact", name: "Emotional Impact" },
-        ];
+        // Handle different evaluation complexities
+        let criteria = [];
 
+        if (evaluation.narrativeCraft !== undefined) {
+          // Advanced evaluation with 6 criteria
+          criteria = [
+            { key: "narrativeCraft", name: "Narrative Craft" },
+            { key: "literaryTechnique", name: "Literary Technique" },
+            { key: "thematicDepth", name: "Thematic Depth" },
+            { key: "worldBuilding", name: "World Building" },
+            { key: "characterDevelopment", name: "Character Development" },
+            { key: "emotionalImpact", name: "Emotional Impact" },
+          ];
+        } else {
+          // Standard 4-criteria evaluation (simple and complex)
+          criteria = [
+            { key: "contentQuality", name: "Content Quality" },
+            { key: "writingStyle", name: "Writing Style" },
+            { key: "creativity", name: "Creativity" },
+            { key: "emotionalImpact", name: "Emotional Impact" },
+          ];
+        }
+
+        // Display criteria scores
         criteria.forEach((criterion) => {
           if (evaluation[criterion.key]) {
             const div = document.createElement("div");
@@ -250,8 +372,22 @@
         if (evaluation.overallScore) {
           overallScoreDiv.textContent = evaluation.overallScore;
         }
+
+        // Handle different summary types
         if (evaluation.summary) {
           summaryDiv.textContent = evaluation.summary;
+        } else if (evaluation.literaryMerits) {
+          // Advanced evaluation has different fields
+          summaryDiv.innerHTML = `
+            <div style="margin-bottom: 8px;"><strong>Literary Analysis:</strong> ${
+              evaluation.literaryMerits
+            }</div>
+            ${
+              evaluation.recommendations
+                ? `<div><strong>Recommendations:</strong> ${evaluation.recommendations}</div>`
+                : ""
+            }
+          `;
         }
 
         evaluationDiv.style.display = "block";
@@ -263,11 +399,17 @@
         evaluationDiv.style.display = "none";
         btn.disabled = true;
         try {
-          const modelSelect = document.getElementById("modelSelect");
           const selectedModel = modelSelect.value;
-          const response = await fetch(
-            `/llm?model=${encodeURIComponent(selectedModel)}`
-          );
+          const promptComplexity = promptComplexitySelect.value;
+          const evaluationComplexity = evaluationComplexitySelect.value;
+
+          const url = `/llm?model=${encodeURIComponent(
+            selectedModel
+          )}&promptComplexity=${encodeURIComponent(
+            promptComplexity
+          )}&evaluationComplexity=${encodeURIComponent(evaluationComplexity)}`;
+
+          const response = await fetch(url);
           if (!response.ok || !response.body) {
             throw new Error("Failed to fetch LLM stream");
           }
@@ -290,7 +432,7 @@
                 const statsStr = buffer.slice(markerIdx + marker.length);
                 try {
                   const stats = JSON.parse(statsStr);
-                  let statsHtml = `<b>Model:</b> ${selectedModel}<br><b>Stats:</b><br>Time to first token: <b>${stats.timeToFirstToken} ms</b><br>Total time: <b>${stats.totalTime} ms</b>`;
+                  let statsHtml = `<b>Model:</b> ${selectedModel}<br><b>Story Complexity:</b> ${promptComplexity}<br><b>Evaluation Complexity:</b> ${evaluationComplexity}<br><b>Stats:</b><br>Time to first token: <b>${stats.timeToFirstToken} ms</b><br>Total time: <b>${stats.totalTime} ms</b>`;
                   if (stats.evaluationTime) {
                     statsHtml += `<br>Evaluation time: <b>${stats.evaluationTime} ms</b>`;
                   }
