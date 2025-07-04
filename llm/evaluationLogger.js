@@ -646,6 +646,310 @@ export async function getEvaluationStats(modelFilter = null) {
       sortedStoryModelBreakdown[model] = data;
     });
 
+    // Calculate complexity-based statistics
+    const complexityStats = {};
+    const promptComplexities = ["simple", "complex", "advanced"];
+    const evaluationComplexities = ["simple", "complex", "advanced"];
+
+    // Initialize complexity stats structure
+    promptComplexities.forEach((promptComplexity) => {
+      if (!complexityStats[promptComplexity]) {
+        complexityStats[promptComplexity] = {
+          name: promptComplexity,
+          totalEvaluations: 0,
+          successfulEvaluations: 0,
+          averageScores: {},
+          averagePerformance: {},
+          averageTokenUsage: {},
+          averageCosts: {},
+          evaluationComplexityBreakdown: {},
+        };
+      }
+
+      // Initialize evaluation complexity breakdown for each prompt complexity
+      evaluationComplexities.forEach((evalComplexity) => {
+        complexityStats[promptComplexity].evaluationComplexityBreakdown[
+          evalComplexity
+        ] = {
+          totalEvaluations: 0,
+          successfulEvaluations: 0,
+          averageScores: {},
+          averagePerformance: {},
+          averageTokenUsage: {},
+          averageCosts: {},
+        };
+      });
+    });
+
+    // Process logs for complexity analysis
+    filteredLogs.forEach((log) => {
+      const promptComplexity = log.complexity?.promptComplexity || "complex"; // default fallback
+      const evaluationComplexity =
+        log.complexity?.evaluationComplexity || "complex"; // default fallback
+
+      if (complexityStats[promptComplexity]) {
+        const promptStats = complexityStats[promptComplexity];
+        const evalStats =
+          promptStats.evaluationComplexityBreakdown[evaluationComplexity];
+
+        // Update total counts
+        promptStats.totalEvaluations++;
+        if (evalStats) {
+          evalStats.totalEvaluations++;
+        }
+
+        // Track successful evaluations
+        const isSuccessful =
+          log.evaluation &&
+          !log.evaluation.error &&
+          log.evaluation.overallScore;
+        if (isSuccessful) {
+          promptStats.successfulEvaluations++;
+          if (evalStats) {
+            evalStats.successfulEvaluations++;
+          }
+        }
+      }
+    });
+
+    // Calculate averages for each complexity combination
+    Object.keys(complexityStats).forEach((promptComplexity) => {
+      const promptStats = complexityStats[promptComplexity];
+
+      // Get logs for this prompt complexity
+      const promptLogs = filteredLogs.filter(
+        (log) =>
+          (log.complexity?.promptComplexity || "complex") === promptComplexity
+      );
+
+      const successfulPromptLogs = promptLogs.filter(
+        (log) =>
+          log.evaluation && !log.evaluation.error && log.evaluation.overallScore
+      );
+
+      // Calculate averages for prompt complexity level
+      if (successfulPromptLogs.length > 0) {
+        // Average scores
+        const scoreFields = [
+          "contentQuality",
+          "writingStyle",
+          "creativity",
+          "emotionalImpact",
+        ];
+        scoreFields.forEach((field) => {
+          const scores = successfulPromptLogs
+            .map((log) => log.evaluation[field]?.score)
+            .filter((score) => typeof score === "number");
+
+          if (scores.length > 0) {
+            promptStats.averageScores[field] =
+              scores.reduce((sum, score) => sum + score, 0) / scores.length;
+          }
+        });
+
+        const overallScores = successfulPromptLogs
+          .map((log) => log.evaluation.overallScore)
+          .filter((score) => typeof score === "number");
+
+        if (overallScores.length > 0) {
+          promptStats.averageScores.overall =
+            overallScores.reduce((sum, score) => sum + score, 0) /
+            overallScores.length;
+        }
+      }
+
+      // Performance stats for prompt complexity
+      if (promptLogs.length > 0) {
+        const performances = promptLogs
+          .map((log) => log.performance)
+          .filter((p) => p);
+        if (performances.length > 0) {
+          promptStats.averagePerformance = {
+            timeToFirstToken:
+              performances.reduce(
+                (sum, p) => sum + (p.timeToFirstToken || 0),
+                0
+              ) / performances.length,
+            totalTime:
+              performances.reduce((sum, p) => sum + (p.totalTime || 0), 0) /
+              performances.length,
+            evaluationTime:
+              performances.reduce(
+                (sum, p) => sum + (p.evaluationTime || 0),
+                0
+              ) / performances.length,
+          };
+        }
+      }
+
+      // Token usage stats for prompt complexity
+      const promptTokenLogs = promptLogs.filter((log) => log.tokenUsage);
+      if (promptTokenLogs.length > 0) {
+        promptStats.averageTokenUsage = {
+          totalTokens:
+            promptTokenLogs.reduce(
+              (sum, log) => sum + (log.tokenUsage.total?.total_tokens || 0),
+              0
+            ) / promptTokenLogs.length,
+          storyTokens:
+            promptTokenLogs.reduce(
+              (sum, log) => sum + (log.tokenUsage.story?.total_tokens || 0),
+              0
+            ) / promptTokenLogs.length,
+          evaluationTokens:
+            promptTokenLogs.reduce(
+              (sum, log) =>
+                sum + (log.tokenUsage.evaluation?.total_tokens || 0),
+              0
+            ) / promptTokenLogs.length,
+        };
+      }
+
+      // Cost stats for prompt complexity
+      const promptCostLogs = promptLogs.filter((log) => log.costs);
+      if (promptCostLogs.length > 0) {
+        promptStats.averageCosts = {
+          totalCost:
+            promptCostLogs.reduce(
+              (sum, log) => sum + (log.costs.total.totalCost || 0),
+              0
+            ) / promptCostLogs.length,
+          storyCost:
+            promptCostLogs.reduce(
+              (sum, log) => sum + (log.costs.story.totalCost || 0),
+              0
+            ) / promptCostLogs.length,
+          evaluationCost:
+            promptCostLogs.reduce(
+              (sum, log) => sum + (log.costs.evaluation.totalCost || 0),
+              0
+            ) / promptCostLogs.length,
+        };
+      }
+
+      // Calculate stats for each evaluation complexity within this prompt complexity
+      Object.keys(promptStats.evaluationComplexityBreakdown).forEach(
+        (evalComplexity) => {
+          const evalStats =
+            promptStats.evaluationComplexityBreakdown[evalComplexity];
+
+          const complexityLogs = promptLogs.filter(
+            (log) =>
+              (log.complexity?.evaluationComplexity || "complex") ===
+              evalComplexity
+          );
+
+          const successfulComplexityLogs = complexityLogs.filter(
+            (log) =>
+              log.evaluation &&
+              !log.evaluation.error &&
+              log.evaluation.overallScore
+          );
+
+          if (successfulComplexityLogs.length > 0) {
+            // Average scores for this combination
+            const scoreFields = [
+              "contentQuality",
+              "writingStyle",
+              "creativity",
+              "emotionalImpact",
+            ];
+            scoreFields.forEach((field) => {
+              const scores = successfulComplexityLogs
+                .map((log) => log.evaluation[field]?.score)
+                .filter((score) => typeof score === "number");
+
+              if (scores.length > 0) {
+                evalStats.averageScores[field] =
+                  scores.reduce((sum, score) => sum + score, 0) / scores.length;
+              }
+            });
+
+            const overallScores = successfulComplexityLogs
+              .map((log) => log.evaluation.overallScore)
+              .filter((score) => typeof score === "number");
+
+            if (overallScores.length > 0) {
+              evalStats.averageScores.overall =
+                overallScores.reduce((sum, score) => sum + score, 0) /
+                overallScores.length;
+            }
+          }
+
+          // Performance stats for this combination
+          if (complexityLogs.length > 0) {
+            const performances = complexityLogs
+              .map((log) => log.performance)
+              .filter((p) => p);
+            if (performances.length > 0) {
+              evalStats.averagePerformance = {
+                timeToFirstToken:
+                  performances.reduce(
+                    (sum, p) => sum + (p.timeToFirstToken || 0),
+                    0
+                  ) / performances.length,
+                totalTime:
+                  performances.reduce((sum, p) => sum + (p.totalTime || 0), 0) /
+                  performances.length,
+                evaluationTime:
+                  performances.reduce(
+                    (sum, p) => sum + (p.evaluationTime || 0),
+                    0
+                  ) / performances.length,
+              };
+            }
+          }
+
+          // Token usage for this combination
+          const complexityTokenLogs = complexityLogs.filter(
+            (log) => log.tokenUsage
+          );
+          if (complexityTokenLogs.length > 0) {
+            evalStats.averageTokenUsage = {
+              totalTokens:
+                complexityTokenLogs.reduce(
+                  (sum, log) => sum + (log.tokenUsage.total?.total_tokens || 0),
+                  0
+                ) / complexityTokenLogs.length,
+              storyTokens:
+                complexityTokenLogs.reduce(
+                  (sum, log) => sum + (log.tokenUsage.story?.total_tokens || 0),
+                  0
+                ) / complexityTokenLogs.length,
+              evaluationTokens:
+                complexityTokenLogs.reduce(
+                  (sum, log) =>
+                    sum + (log.tokenUsage.evaluation?.total_tokens || 0),
+                  0
+                ) / complexityTokenLogs.length,
+            };
+          }
+
+          // Cost stats for this combination
+          const complexityCostLogs = complexityLogs.filter((log) => log.costs);
+          if (complexityCostLogs.length > 0) {
+            evalStats.averageCosts = {
+              totalCost:
+                complexityCostLogs.reduce(
+                  (sum, log) => sum + (log.costs.total.totalCost || 0),
+                  0
+                ) / complexityCostLogs.length,
+              storyCost:
+                complexityCostLogs.reduce(
+                  (sum, log) => sum + (log.costs.story.totalCost || 0),
+                  0
+                ) / complexityCostLogs.length,
+              evaluationCost:
+                complexityCostLogs.reduce(
+                  (sum, log) => sum + (log.costs.evaluation.totalCost || 0),
+                  0
+                ) / complexityCostLogs.length,
+            };
+          }
+        }
+      );
+    });
+
     return {
       totalEvaluations,
       successfulEvaluations: successfulCount,
@@ -654,6 +958,7 @@ export async function getEvaluationStats(modelFilter = null) {
       performanceStats,
       tokenStats,
       costStats,
+      complexityStats, // Add complexity stats to return object
       recentEvaluations,
       modelBreakdown: sortedStoryModelBreakdown,
       appliedFilter: modelFilter,

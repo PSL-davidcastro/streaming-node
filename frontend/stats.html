@@ -284,6 +284,131 @@
         font-size: 0.8rem;
         font-weight: normal;
       }
+
+      /* Complexity Analysis Styles */
+      .complexity-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .complexity-card {
+        background: #f8f9fa;
+        border: 1px solid #e8ecef;
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .complexity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      .complexity-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #2c3e50;
+        text-transform: capitalize;
+      }
+
+      .complexity-count {
+        font-size: 0.9rem;
+        color: #666;
+        background: #e9ecef;
+        padding: 2px 8px;
+        border-radius: 12px;
+      }
+
+      .complexity-metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .complexity-metric {
+        text-align: center;
+        padding: 8px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e8ecef;
+      }
+
+      .complexity-metric-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2980b9;
+        margin-bottom: 2px;
+      }
+
+      .complexity-metric-label {
+        font-size: 0.8rem;
+        color: #666;
+      }
+
+      .complexity-scores {
+        margin-top: 12px;
+      }
+
+      .complexity-score-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        padding: 4px 8px;
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #e8ecef;
+      }
+
+      .complexity-score-label {
+        font-size: 0.9rem;
+        color: #555;
+      }
+
+      .complexity-score-value {
+        font-weight: bold;
+        color: #27ae60;
+      }
+
+      .evaluation-breakdown {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #dee2e6;
+      }
+
+      .evaluation-breakdown-title {
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 8px;
+      }
+
+      .evaluation-complexity-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+        padding: 2px 6px;
+        background: #f1f3f4;
+        border-radius: 3px;
+        font-size: 0.85rem;
+      }
+
+      .evaluation-complexity-name {
+        color: #6c757d;
+        text-transform: capitalize;
+      }
+
+      .evaluation-complexity-data {
+        color: #495057;
+        font-weight: 500;
+      }
     </style>
   </head>
   <body>
@@ -448,6 +573,14 @@
             <h2>🎯 Average Scores</h2>
             <div id="scoreBreakdown">
               <!-- Scores will be dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Complexity Analysis -->
+          <div class="card full-expand">
+            <h2>🧩 Prompt Complexity Analysis</h2>
+            <div id="complexityAnalysis">
+              <!-- Complexity analysis will be dynamically populated -->
             </div>
           </div>
 
@@ -682,6 +815,9 @@
         // Score breakdown
         populateScoreBreakdown(stats.averageScores);
 
+        // Complexity analysis
+        populateComplexityAnalysis(stats.complexityStats);
+
         // Recent evaluations
         populateRecentEvaluations(stats.recentEvaluations);
       }
@@ -829,6 +965,188 @@
           `;
           container.appendChild(scoreDiv);
         });
+      }
+
+      function populateComplexityAnalysis(complexityStats) {
+        const container = document.getElementById("complexityAnalysis");
+        container.innerHTML = "";
+
+        if (!complexityStats || Object.keys(complexityStats).length === 0) {
+          container.innerHTML =
+            '<p style="text-align: center; color: #666;">No complexity data available yet. Generate stories with different prompt complexities to see analysis.</p>';
+          return;
+        }
+
+        const complexityGrid = document.createElement("div");
+        complexityGrid.className = "complexity-grid";
+
+        Object.entries(complexityStats).forEach(([complexity, data]) => {
+          if (data.totalEvaluations === 0) return; // Skip complexities with no data
+
+          const complexityCard = document.createElement("div");
+          complexityCard.className = "complexity-card";
+
+          const successRate =
+            data.totalEvaluations > 0
+              ? Math.round(
+                  (data.successfulEvaluations / data.totalEvaluations) * 100
+                )
+              : 0;
+
+          const avgTime = data.averagePerformance?.totalTime
+            ? Math.round(data.averagePerformance.totalTime)
+            : 0;
+
+          const avgTokens = data.averageTokenUsage?.totalTokens
+            ? Math.round(data.averageTokenUsage.totalTokens)
+            : 0;
+
+          const avgCost = data.averageCosts?.totalCost
+            ? data.averageCosts.totalCost.toFixed(6)
+            : 0;
+
+          complexityCard.innerHTML = `
+            <div class="complexity-header">
+              <div class="complexity-title">${complexity} Prompts</div>
+              <div class="complexity-count">${
+                data.totalEvaluations
+              } evaluations</div>
+            </div>
+            
+            <div class="complexity-metrics">
+              <div class="complexity-metric">
+                <div class="complexity-metric-value">${successRate}%</div>
+                <div class="complexity-metric-label">Success Rate</div>
+              </div>
+              <div class="complexity-metric">
+                <div class="complexity-metric-value">${avgTime}ms</div>
+                <div class="complexity-metric-label">Avg Time</div>
+              </div>
+              <div class="complexity-metric">
+                <div class="complexity-metric-value">${avgTokens.toLocaleString()}</div>
+                <div class="complexity-metric-label">Avg Tokens</div>
+              </div>
+              <div class="complexity-metric">
+                <div class="complexity-metric-value">$${avgCost}</div>
+                <div class="complexity-metric-label">Avg Cost</div>
+              </div>
+            </div>
+
+            ${
+              data.averageScores && Object.keys(data.averageScores).length > 0
+                ? `
+              <div class="complexity-scores">
+                ${
+                  data.averageScores.overall
+                    ? `
+                  <div class="complexity-score-item">
+                    <span class="complexity-score-label">Overall Score</span>
+                    <span class="complexity-score-value">${data.averageScores.overall.toFixed(
+                      1
+                    )}/10</span>
+                  </div>
+                `
+                    : ""
+                }
+                ${
+                  data.averageScores.contentQuality
+                    ? `
+                  <div class="complexity-score-item">
+                    <span class="complexity-score-label">Content Quality</span>
+                    <span class="complexity-score-value">${data.averageScores.contentQuality.toFixed(
+                      1
+                    )}/10</span>
+                  </div>
+                `
+                    : ""
+                }
+                ${
+                  data.averageScores.writingStyle
+                    ? `
+                  <div class="complexity-score-item">
+                    <span class="complexity-score-label">Writing Style</span>
+                    <span class="complexity-score-value">${data.averageScores.writingStyle.toFixed(
+                      1
+                    )}/10</span>
+                  </div>
+                `
+                    : ""
+                }
+                ${
+                  data.averageScores.creativity
+                    ? `
+                  <div class="complexity-score-item">
+                    <span class="complexity-score-label">Creativity</span>
+                    <span class="complexity-score-value">${data.averageScores.creativity.toFixed(
+                      1
+                    )}/10</span>
+                  </div>
+                `
+                    : ""
+                }
+                ${
+                  data.averageScores.emotionalImpact
+                    ? `
+                  <div class="complexity-score-item">
+                    <span class="complexity-score-label">Emotional Impact</span>
+                    <span class="complexity-score-value">${data.averageScores.emotionalImpact.toFixed(
+                      1
+                    )}/10</span>
+                  </div>
+                `
+                    : ""
+                }
+              </div>
+            `
+                : ""
+            }
+
+            ${
+              data.evaluationComplexityBreakdown &&
+              Object.keys(data.evaluationComplexityBreakdown).some(
+                (key) =>
+                  data.evaluationComplexityBreakdown[key].totalEvaluations > 0
+              )
+                ? `
+              <div class="evaluation-breakdown">
+                <div class="evaluation-breakdown-title">By Evaluation Complexity:</div>
+                ${Object.entries(data.evaluationComplexityBreakdown)
+                  .map(([evalComplexity, evalData]) => {
+                    if (evalData.totalEvaluations === 0) return "";
+                    const evalSuccessRate =
+                      evalData.totalEvaluations > 0
+                        ? Math.round(
+                            (evalData.successfulEvaluations /
+                              evalData.totalEvaluations) *
+                              100
+                          )
+                        : 0;
+                    const evalOverallScore = evalData.averageScores?.overall
+                      ? evalData.averageScores.overall.toFixed(1)
+                      : "-";
+                    return `
+                    <div class="evaluation-complexity-item">
+                      <span class="evaluation-complexity-name">${evalComplexity}</span>
+                      <span class="evaluation-complexity-data">${evalData.totalEvaluations} evals, ${evalSuccessRate}% success, ${evalOverallScore}/10 avg</span>
+                    </div>
+                  `;
+                  })
+                  .join("")}
+              </div>
+            `
+                : ""
+            }
+          `;
+
+          complexityGrid.appendChild(complexityCard);
+        });
+
+        if (complexityGrid.children.length === 0) {
+          container.innerHTML =
+            '<p style="text-align: center; color: #666;">No complexity data available for the selected filters.</p>';
+        } else {
+          container.appendChild(complexityGrid);
+        }
       }
 
       function populateRecentEvaluations(recentEvaluations) {
