@@ -436,6 +436,16 @@ export async function getEvaluationStats(modelFilter = null) {
     }
   });
 
+  // sort story models by overall score
+  const sortedStoryModels = Object.entries(storyModelBreakdown).sort(
+    ([, a], [, b]) =>
+      (b.averageScores.overall || 0) - (a.averageScores.overall || 0)
+  );
+  const sortedStoryModelBreakdown = {};
+  sortedStoryModels.forEach(([model, data]) => {
+    sortedStoryModelBreakdown[model] = data;
+  });
+
   return {
     totalEvaluations,
     successfulEvaluations: successfulCount,
@@ -444,7 +454,7 @@ export async function getEvaluationStats(modelFilter = null) {
     performanceStats,
     tokenStats,
     recentEvaluations,
-    modelBreakdown: storyModelBreakdown,
+    modelBreakdown: sortedStoryModelBreakdown,
     appliedFilter: modelFilter,
   };
 }
