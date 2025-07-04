@@ -790,6 +790,9 @@
                 ? `
               <div class="evaluation-details">
                 <div class="evaluation-detail">
+                  <strong>Model:</strong> ${evaluation.models.storyModel || "-"}
+                </div>
+                <div class="evaluation-detail">
                   <strong>Content:</strong> ${
                     evaluation.evaluation.contentQuality?.score || "-"
                   }/10
