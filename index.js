@@ -140,25 +140,23 @@ app.get("/api/evaluation-stats", async (req, res) => {
 app.get("/api/models", async (req, res) => {
   try {
     const logs = await getEvaluationLogs();
-    const models = new Set();
+    const storyModels = new Set();
 
     logs.forEach((log) => {
-      if (log.models) {
-        if (log.models.storyModel) models.add(log.models.storyModel);
-        if (log.models.evaluationModel) models.add(log.models.evaluationModel);
+      if (log.models && log.models.storyModel) {
+        storyModels.add(log.models.storyModel);
       }
     });
 
-    // Add current models even if not in logs yet
-    models.add(getStoryModel());
-    models.add(getEvaluationModel());
+    // Add current story model even if not in logs yet
+    storyModels.add(getStoryModel());
 
     res.json({
       currentModels: {
         story: getStoryModel(),
         evaluation: getEvaluationModel(),
       },
-      availableModels: Array.from(models).filter(
+      availableModels: Array.from(storyModels).filter(
         (model) => model !== "unknown"
       ),
     });

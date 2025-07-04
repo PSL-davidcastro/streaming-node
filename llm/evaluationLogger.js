@@ -115,13 +115,9 @@ export async function getEvaluationStats(modelFilter = null) {
     };
   }
 
-  // Filter logs by model if specified
+  // Filter logs by story model if specified (only filter by story model, not evaluation model)
   const filteredLogs = modelFilter
-    ? logs.filter(
-        (log) =>
-          log.models?.storyModel === modelFilter ||
-          log.models?.evaluationModel === modelFilter
-      )
+    ? logs.filter((log) => log.models?.storyModel === modelFilter)
     : logs;
 
   // Get model breakdown statistics with enhanced tracking
@@ -452,6 +448,14 @@ export async function getEvaluationStats(modelFilter = null) {
   // Get recent evaluations (last 10)
   const recentEvaluations = filteredLogs.slice(-10).reverse();
 
+  // Filter model breakdown to only include story models (exclude evaluation/judge models)
+  const storyModelBreakdown = {};
+  Object.entries(modelBreakdown).forEach(([model, data]) => {
+    if (data.type === "story") {
+      storyModelBreakdown[model] = data;
+    }
+  });
+
   return {
     totalEvaluations,
     successfulEvaluations: successfulCount,
@@ -460,7 +464,7 @@ export async function getEvaluationStats(modelFilter = null) {
     performanceStats,
     tokenStats,
     recentEvaluations,
-    modelBreakdown,
+    modelBreakdown: storyModelBreakdown,
     appliedFilter: modelFilter,
   };
 }
