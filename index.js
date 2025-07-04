@@ -60,12 +60,12 @@ app.get("/llm", async (req, res) => {
     }
     res.end();
     const elapsedTime = Date.now() - startTime;
-    const evaluation = await generateEvaluation(output);
+    // const evaluation = await generateEvaluation(output);
     console.log({
       endpoint: "/llm",
       timeToFirstToken: `${timeToFirstToken} ms`,
       totalTime: `${elapsedTime} ms`,
-      evaluation,
+      // evaluation,
     });
   } catch (error) {
     console.error("Error generating text:", error);
