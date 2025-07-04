@@ -326,6 +326,34 @@
                     statsHtml += `<br><b>Total Tokens:</b> ${totalTokens}`;
                   }
 
+                  // Add cost information
+                  if (stats.costs) {
+                    const costs = stats.costs;
+                    statsHtml += `<br><b>💰 Costs:</b>`;
+
+                    if (costs.story && costs.evaluation) {
+                      statsHtml += `<br>Story: <b>$${costs.story.totalCost.toFixed(
+                        6
+                      )}</b> (${costs.story.tokens.total} tokens)`;
+                      statsHtml += `<br>Evaluation: <b>$${costs.evaluation.totalCost.toFixed(
+                        6
+                      )}</b> (${costs.evaluation.tokens.total} tokens)`;
+                    }
+
+                    if (costs.total) {
+                      statsHtml += `<br><b>Total Cost: $${costs.total.totalCost.toFixed(
+                        6
+                      )}</b>`;
+
+                      // Show cost breakdown for larger amounts
+                      if (costs.total.totalCost >= 0.001) {
+                        statsHtml += ` (Input: $${costs.total.inputCost.toFixed(
+                          6
+                        )}, Output: $${costs.total.outputCost.toFixed(6)})`;
+                      }
+                    }
+                  }
+
                   statsDiv.innerHTML = statsHtml;
 
                   // Display evaluation if available

@@ -11,6 +11,7 @@ import {
   getEvaluationStats,
   getEvaluationLogs,
 } from "./llm/evaluationLogger.js";
+import { calculateTotalCosts, formatCost } from "./llm/costCalculator.js";
 import { time } from "node:console";
 
 const delayMs = 500;
@@ -108,6 +109,17 @@ app.get("/llm", async (req, res) => {
       evaluationTokenUsage: evaluation?.tokenUsage || null,
     };
 
+    // Calculate cost information
+    const costBreakdown = calculateTotalCosts(
+      selectedModel,
+      storyTokenUsage,
+      getEvaluationModel(),
+      evaluation?.tokenUsage || null
+    );
+
+    // Add cost information to final stats
+    finalStats.costs = costBreakdown;
+
     // Log evaluation data for performance tracking
     try {
       const modelInfo = {
@@ -141,8 +153,12 @@ app.get("/llm", async (req, res) => {
 // API endpoint to get evaluation statistics
 app.get("/api/evaluation-stats", async (req, res) => {
   try {
+    console.log("API endpoint called: /api/evaluation-stats");
     const modelFilter = req.query.model || null;
+    console.log("Model filter:", modelFilter);
     const stats = await getEvaluationStats(modelFilter);
+    console.log("Stats retrieved:", stats ? "success" : "null");
+    console.log("Stats keys:", Object.keys(stats || {}));
     res.json(stats);
   } catch (error) {
     console.error("Error fetching evaluation stats:", error);

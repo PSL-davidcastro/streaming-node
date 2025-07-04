@@ -326,6 +326,52 @@
             </div>
           </div>
 
+          <!-- Cost Analytics -->
+          <div class="card">
+            <h2>💰 Cost Analytics</h2>
+            <div class="stat-grid">
+              <div class="stat-item">
+                <div class="stat-value" id="avgTotalCost">-</div>
+                <div class="stat-label">Avg Cost per Generation</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="totalCosts">-</div>
+                <div class="stat-label">Total Costs</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="avgStoryCost">-</div>
+                <div class="stat-label">Avg Story Cost</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="avgEvaluationCost">-</div>
+                <div class="stat-label">Avg Evaluation Cost</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cost Efficiency -->
+          <div class="card">
+            <h2>📈 Cost Efficiency</h2>
+            <div class="stat-grid">
+              <div class="stat-item">
+                <div class="stat-value" id="avgCostPerQuality">-</div>
+                <div class="stat-label">Avg Cost per Quality Point</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="avgQualityPerDollar">-</div>
+                <div class="stat-label">Avg Quality per Dollar</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="avgCostPerWord">-</div>
+                <div class="stat-label">Avg Cost per Word</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="avgCostPerChar">-</div>
+                <div class="stat-label">Avg Cost per Character</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Model Breakdown -->
           <div class="card full-expand">
             <h2>🤖 Story Model Breakdown (Sorted by overall performance)</h2>
@@ -513,6 +559,60 @@
           document.getElementById("avgEvaluationTokens").textContent = "-";
         }
 
+        // Cost analytics
+        if (stats.costStats) {
+          document.getElementById("avgTotalCost").textContent = stats.costStats
+            .averageTotalCost
+            ? `$${stats.costStats.averageTotalCost.toFixed(6)}`
+            : "-";
+
+          document.getElementById("totalCosts").textContent = stats.costStats
+            .totalCosts
+            ? `$${stats.costStats.totalCosts.toFixed(4)}`
+            : "-";
+
+          document.getElementById("avgStoryCost").textContent = stats.costStats
+            .averageStoryCost
+            ? `$${stats.costStats.averageStoryCost.toFixed(6)}`
+            : "-";
+
+          document.getElementById("avgEvaluationCost").textContent = stats
+            .costStats.averageEvaluationCost
+            ? `$${stats.costStats.averageEvaluationCost.toFixed(6)}`
+            : "-";
+
+          // Cost efficiency metrics
+          document.getElementById("avgCostPerQuality").textContent = stats
+            .costStats.averageCostPerQualityPoint
+            ? `$${stats.costStats.averageCostPerQualityPoint.toFixed(6)}`
+            : "-";
+
+          document.getElementById("avgQualityPerDollar").textContent = stats
+            .costStats.averageQualityPerDollar
+            ? stats.costStats.averageQualityPerDollar.toFixed(2)
+            : "-";
+
+          document.getElementById("avgCostPerWord").textContent = stats
+            .costStats.averageCostPerWord
+            ? `$${stats.costStats.averageCostPerWord.toFixed(6)}`
+            : "-";
+
+          document.getElementById("avgCostPerChar").textContent = stats
+            .costStats.averageCostPerCharacter
+            ? `$${stats.costStats.averageCostPerCharacter.toFixed(8)}`
+            : "-";
+        } else {
+          // If no cost stats available, show dashes
+          document.getElementById("avgTotalCost").textContent = "-";
+          document.getElementById("totalCosts").textContent = "-";
+          document.getElementById("avgStoryCost").textContent = "-";
+          document.getElementById("avgEvaluationCost").textContent = "-";
+          document.getElementById("avgCostPerQuality").textContent = "-";
+          document.getElementById("avgQualityPerDollar").textContent = "-";
+          document.getElementById("avgCostPerWord").textContent = "-";
+          document.getElementById("avgCostPerChar").textContent = "-";
+        }
+
         // Model breakdown
         populateModelBreakdown(stats.modelBreakdown);
 
@@ -590,6 +690,38 @@
                     : "-"
                 }ms</div>
                 <div class="stat-label">Avg Time</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">${
+                  data.averageCosts?.totalCost
+                    ? `$${data.averageCosts.totalCost.toFixed(6)}`
+                    : "-"
+                }</div>
+                <div class="stat-label">Avg Cost</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">${
+                  data.totalCosts?.total
+                    ? `$${data.totalCosts.total.toFixed(4)}`
+                    : "-"
+                }</div>
+                <div class="stat-label">Total Cost</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">${
+                  data.costEfficiency?.qualityPerDollar
+                    ? data.costEfficiency.qualityPerDollar.toFixed(2)
+                    : "-"
+                }</div>
+                <div class="stat-label">Quality/Dollar</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">${
+                  data.costEfficiency?.costPerWord
+                    ? `$${data.costEfficiency.costPerWord.toFixed(6)}`
+                    : "-"
+                }</div>
+                <div class="stat-label">Cost/Word</div>
               </div>
             </div>
           `;
@@ -684,6 +816,20 @@
                 </div>
                 <div class="evaluation-detail">
                   <strong>Words:</strong> ${evaluation.wordCount}
+                </div>
+                <div class="evaluation-detail">
+                  <strong>Total Cost:</strong> ${
+                    evaluation.costs?.total?.totalCost
+                      ? `$${evaluation.costs.total.totalCost.toFixed(6)}`
+                      : "-"
+                  }
+                </div>
+                <div class="evaluation-detail">
+                  <strong>Cost/Word:</strong> ${
+                    evaluation.costEfficiency?.costPerWord
+                      ? `$${evaluation.costEfficiency.costPerWord.toFixed(6)}`
+                      : "-"
+                  }
                 </div>
               </div>
             `
