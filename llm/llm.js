@@ -21,6 +21,7 @@ export const generateStream = async (model = DEFAULT_STORY_MODEL) => {
     ],
     stream: true,
     stream_options: { include_usage: true },
+    temperature: 1,
   });
   return stream;
 };

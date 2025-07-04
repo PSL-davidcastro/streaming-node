@@ -16,7 +16,7 @@ Provide your response in this exact JSON format:
   "writingStyle": { "score": X, "feedback": "brief explanation" },
   "creativity": { "score": X, "feedback": "brief explanation" },
   "emotionalImpact": { "score": X, "feedback": "brief explanation" },
-  "overallScore": X,
+  "overallScore": float, // Average of the four scores
   "summary": "1-2 sentence overall assessment"
 }`,
   evaluateLongStoryUserPrompt: `Please evaluate this story:
