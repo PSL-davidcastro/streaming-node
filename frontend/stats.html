@@ -545,6 +545,29 @@
                 )
               : 0;
 
+          // Calculate average score from available score data
+          let avgScore = "-";
+          if (data.averageScores && data.averageScores.overall !== undefined) {
+            avgScore = data.averageScores.overall.toFixed(1);
+          } else if (data.averageScores) {
+            // Calculate overall score from individual scores if overall is missing
+            const scores = [];
+            if (data.averageScores.contentQuality !== undefined)
+              scores.push(data.averageScores.contentQuality);
+            if (data.averageScores.writingStyle !== undefined)
+              scores.push(data.averageScores.writingStyle);
+            if (data.averageScores.creativity !== undefined)
+              scores.push(data.averageScores.creativity);
+            if (data.averageScores.emotionalImpact !== undefined)
+              scores.push(data.averageScores.emotionalImpact);
+
+            if (scores.length > 0) {
+              const calculatedAvg =
+                scores.reduce((sum, score) => sum + score, 0) / scores.length;
+              avgScore = calculatedAvg.toFixed(1);
+            }
+          }
+
           modelDiv.innerHTML = `
             <div style="font-weight: bold; color: #2980b9;">${model}</div>
             <div class="stat-grid" style="margin-top: 8px;">
@@ -557,11 +580,7 @@
                 <div class="stat-label">Success Rate</div>
               </div>
               <div class="stat-item">
-                <div class="stat-value">${
-                  data.averageScores?.overall
-                    ? data.averageScores.overall.toFixed(1)
-                    : "-"
-                }</div>
+                <div class="stat-value">${avgScore}</div>
                 <div class="stat-label">Avg Score</div>
               </div>
               <div class="stat-item">
