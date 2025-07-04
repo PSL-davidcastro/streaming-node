@@ -73,9 +73,17 @@ app.get("/llm", async (req, res) => {
   }
 });
 
+// server static frontend files
+app.use(express.static("frontend"));
+// Serve the index.html file for the root path
+app.get("/", (req, res) => {
+  res.sendFile("index.html", { root: "frontend" });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Express server listening on port ${PORT}`);
   console.log(`Try: http://localhost:${PORT}/stream`);
   console.log(`Try: http://localhost:${PORT}/llm`);
+  console.log(`Try: http://localhost:${PORT}/`); // For the frontend
 });
