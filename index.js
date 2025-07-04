@@ -6,6 +6,7 @@ import { pipeline } from "node:stream/promises";
 import express from "express";
 import { generateStream } from "./llm/llm.js"; // Ensure this path is correct
 import { generateEvaluation } from "./llm/llmEvaluation.js"; // Ensure this path is correct
+import { logEvaluation, getEvaluationStats } from "./llm/evaluationLogger.js";
 import { time } from "node:console";
 
 const delayMs = 500;
@@ -82,6 +83,14 @@ app.get("/llm", async (req, res) => {
       evaluation: evaluation,
     };
 
+    // Log evaluation data for performance tracking
+    try {
+      await logEvaluation(evaluation, finalStats, output);
+    } catch (logError) {
+      console.error("Failed to log evaluation:", logError);
+      // Don't fail the request if logging fails
+    }
+
     // Send stats and evaluation as a final chunk with a marker
     res.write(`\n---STATS---\n${JSON.stringify(finalStats)}`);
     res.end();
@@ -99,11 +108,27 @@ app.get("/llm", async (req, res) => {
   }
 });
 
+// API endpoint to get evaluation statistics
+app.get("/api/evaluation-stats", async (req, res) => {
+  try {
+    const stats = await getEvaluationStats();
+    res.json(stats);
+  } catch (error) {
+    console.error("Error fetching evaluation stats:", error);
+    res.status(500).json({ error: "Failed to fetch evaluation statistics" });
+  }
+});
+
 // server static frontend files
 app.use(express.static("frontend"));
 // Serve the index.html file for the root path
 app.get("/", (req, res) => {
   res.sendFile("index.html", { root: "frontend" });
+});
+
+// Serve the stats dashboard
+app.get("/stats", (req, res) => {
+  res.sendFile("stats.html", { root: "frontend" });
 });
 
 const PORT = process.env.PORT || 3000;
@@ -112,4 +137,5 @@ app.listen(PORT, () => {
   console.log(`Try: http://localhost:${PORT}/stream`);
   console.log(`Try: http://localhost:${PORT}/llm`);
   console.log(`Try: http://localhost:${PORT}/`); // For the frontend
+  console.log(`Try: http://localhost:${PORT}/stats`); // For the stats dashboard
 });

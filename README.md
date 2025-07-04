@@ -8,6 +8,8 @@ This project demonstrates streaming responses from a Node.js server using Expres
 - **/llm**: Streams generated text from OpenAI's GPT-4 model and provides automatic evaluation.
 - **Frontend Interface**: Interactive web UI for testing the streaming LLM functionality with real-time display and performance metrics.
 - **Evaluation Pipeline**: Automatic story evaluation using AI with scoring on content quality, writing style, creativity, and emotional impact.
+- **Performance Dashboard**: Comprehensive analytics dashboard tracking evaluation performance over time with historical data and trends.
+- **Evaluation Logging**: Persistent storage of evaluation results and performance metrics for long-term analysis.
 - Modular code with support for environment variables via `dotenv`.
 
 ## Project Structure
@@ -15,8 +17,10 @@ This project demonstrates streaming responses from a Node.js server using Expres
 - `index.js`: Main Express server with streaming endpoints.
 - `llm/llm.js`: Handles OpenAI API streaming logic.
 - `llm/llmEvaluation.js`: Contains story evaluation functionality using OpenAI.
+- `llm/evaluationLogger.js`: Manages persistent logging of evaluation data and performance metrics.
 - `llm/prompts.js`: Contains prompt(s) for the language model.
 - `frontend/index.html`: Interactive web interface for testing LLM streaming with real-time display.
+- `frontend/stats.html`: Performance dashboard for viewing evaluation analytics and historical data.
 - `package.json`: Project metadata and dependencies.
 
 ## Setup
@@ -43,21 +47,33 @@ This project demonstrates streaming responses from a Node.js server using Expres
 
 - Visit [http://localhost:3000/stream](http://localhost:3000/stream) to see file streaming in action.
 - Visit [http://localhost:3000/llm](http://localhost:3000/llm) to get a streamed story from the LLM.
+- Visit [http://localhost:3000/api/evaluation-stats](http://localhost:3000/api/evaluation-stats) to get evaluation statistics as JSON.
 
 ### Frontend Interface
 
 - Visit [http://localhost:3000/](http://localhost:3000/) to access the interactive web interface.
-- The frontend provides:
-  - A "Generate Story" button to trigger LLM streaming
-  - Real-time display of the generated content as it streams
-  - Performance metrics including time to first token and total generation time
-  - **Story Evaluation Dashboard**: After story generation, view automatic AI evaluation with:
-    - Content Quality scoring (1-10)
-    - Writing Style assessment (1-10)
-    - Creativity rating (1-10)
-    - Emotional Impact score (1-10)
-    - Overall score and summary
-  - Clean, modern UI with responsive design
+- Visit [http://localhost:3000/stats](http://localhost:3000/stats) to view the performance dashboard.
+
+The main interface provides:
+
+- A "Generate Story" button to trigger LLM streaming
+- Real-time display of the generated content as it streams
+- Performance metrics including time to first token and total generation time
+- **Story Evaluation Dashboard**: After story generation, view automatic AI evaluation with:
+  - Content Quality scoring (1-10)
+  - Writing Style assessment (1-10)
+  - Creativity rating (1-10)
+  - Emotional Impact score (1-10)
+  - Overall score and summary
+- Clean, modern UI with responsive design
+
+The performance dashboard provides:
+
+- **Historical Analytics**: Track evaluation performance over time
+- **Score Trends**: View average scores across all evaluation criteria
+- **Performance Metrics**: Monitor generation and evaluation timing
+- **Recent Activity**: See latest evaluations with detailed breakdowns
+- **Success Rate Tracking**: Monitor evaluation success/failure rates
 
 ## Requirements
 

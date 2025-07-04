@@ -79,7 +79,9 @@
       .controls {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 10px;
       }
       .evaluation {
         margin-top: 24px;
@@ -133,6 +135,20 @@
         font-weight: bold;
         color: #2980b9;
       }
+      .nav-link {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 8px 16px;
+        background: #27ae60;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        transition: background 0.2s;
+      }
+      .nav-link:hover {
+        background: #219a52;
+      }
     </style>
   </head>
   <body>
@@ -140,6 +156,7 @@
       <h1>LLM Streaming Demo</h1>
       <div class="controls">
         <button id="fetchBtn">Generate Story</button>
+        <a href="/stats" class="nav-link">📊 View Performance Stats</a>
         <div
           id="stats"
           style="margin-top: 18px; color: #444; font-size: 0.98rem"
