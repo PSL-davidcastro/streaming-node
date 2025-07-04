@@ -1,17 +1,18 @@
 # Streaming Node POC
 
-This project demonstrates streaming responses from a Node.js server using Express and the OpenAI API. It includes endpoints for streaming file content and generating streamed responses from a language model.
+This project demonstrates streaming responses from a Node.js server using Express and the OpenAI API. It's a comprehensive AI story generation and evaluation platform that creates sci-fi stories about astronauts stranded on alien exoplanets, then automatically evaluates the quality of the generated content using a secondary AI model.
 
 ## Features
 
 - **/stream**: Streams the contents of the current file with a delay and transforms the output to uppercase.
-- **/llm**: Streams generated text from OpenAI's GPT-4 model and provides automatic evaluation.
+- **/llm**: Generates and streams compelling sci-fi stories about astronauts stranded on alien exoplanets, featuring unique alien flora and fauna.
+- **Automatic Story Evaluation**: Each generated story is automatically evaluated by a separate AI model (GPT-4.1 Mini) for content quality, writing style, creativity, and emotional impact.
 - **Model Selection**: Choose from multiple OpenAI models for story generation with support for GPT-4.1, GPT-4.1 Mini, GPT-4.1 Nano, and o4-mini variants.
-- **Frontend Interface**: Interactive web UI for testing the streaming LLM functionality with real-time display and performance metrics.
-- **Evaluation Pipeline**: Automatic story evaluation using AI with scoring on content quality, writing style, creativity, and emotional impact.
-- **Performance Dashboard**: Comprehensive analytics dashboard tracking evaluation performance over time with historical data and trends.
+- **Real-time Streaming Interface**: Interactive web UI that displays stories as they're generated token by token.
+- **Comprehensive Analytics Dashboard**: Track evaluation performance, token usage, model comparison, and historical trends.
 - **Token Usage Analytics**: Detailed tracking of OpenAI API token consumption for cost analysis and optimization.
 - **Evaluation Logging**: Persistent storage of evaluation results and performance metrics for long-term analysis.
+- **Story-Specific Prompts**: Specialized prompts designed to generate engaging sci-fi narratives with specific requirements (astronaut protagonist, alien species, survival themes, hopeful endings).
 - Modular code with support for environment variables via `dotenv`.
 
 ## Project Structure
@@ -48,7 +49,7 @@ This project demonstrates streaming responses from a Node.js server using Expres
 ### API Endpoints
 
 - Visit [http://localhost:3000/stream](http://localhost:3000/stream) to see file streaming in action.
-- Visit [http://localhost:3000/llm](http://localhost:3000/llm) to get a streamed story from the LLM.
+- Visit [http://localhost:3000/llm](http://localhost:3000/llm) to get a streamed sci-fi story about an astronaut on an exoplanet.
   - Supports model selection via query parameter: `?model=gpt-4.1-2025-04-14`
 - Visit [http://localhost:3000/api/evaluation-stats](http://localhost:3000/api/evaluation-stats) to get evaluation statistics as JSON.
   - Supports filtering by model: `?model=o4-mini-2025-04-16`
@@ -66,20 +67,20 @@ The main interface provides:
   - GPT-4.1 (gpt-4.1-2025-04-14)
   - GPT-4.1 Mini (gpt-4.1-mini-2025-04-14)
   - GPT-4.1 Nano (gpt-4.1-nano-2025-04-14)
-- A "Generate Story" button to trigger LLM streaming
-- Real-time display of the generated content as it streams
-- Performance metrics including time to first token and total generation time
+- **"Generate Story" Button**: Triggers generation of a sci-fi story about an astronaut stranded on an alien exoplanet
+- **Real-time Story Streaming**: Watch the story unfold token by token as it's generated
+- **Performance Metrics**: View time to first token, total generation time, and detailed token usage
 - **Token Usage Tracking**: Real-time display of token consumption for both story generation and evaluation
   - Story tokens (prompt + completion breakdown)
   - Evaluation tokens (prompt + completion breakdown)
   - Total token count across both operations
-- **Story Evaluation Dashboard**: After story generation, view automatic AI evaluation with:
-  - Content Quality scoring (1-10)
-  - Writing Style assessment (1-10)
-  - Creativity rating (1-10)
-  - Emotional Impact score (1-10)
-  - Overall score and summary
-- Clean, modern UI with responsive design
+- **Automatic Story Evaluation**: After story generation, view AI-powered evaluation with:
+  - Content Quality scoring (1-10) - How well the story meets the specific prompt requirements
+  - Writing Style assessment (1-10) - Grammar, clarity, structure, and engagement
+  - Creativity rating (1-10) - Originality and imaginative elements
+  - Emotional Impact score (1-10) - Ability to evoke emotions and engage readers
+  - Overall score and detailed summary
+- **Modern, Responsive UI**: Clean interface optimized for both desktop and mobile viewing
 
 The performance dashboard provides:
 
@@ -130,16 +131,55 @@ The performance dashboard provides model-specific insights:
 - Node.js 18+
 - OpenAI API key
 
+## Story Theme & Content
+
+This application is specifically designed to generate science fiction stories with a focused narrative premise:
+
+### Story Elements
+- **Protagonist**: A lone astronaut stranded on an alien world
+- **Setting**: Newly discovered exoplanets with unique environments
+- **Themes**: Survival, isolation, wonder, and hope
+- **Required Content**: 
+  - Initial survival struggles
+  - At least three distinct alien species or plant types
+  - A pivotal moment of discovery that changes the protagonist's perspective
+  - Hopeful, open-ended conclusions
+
+### Story Structure
+- **Length**: Approximately 300-500 words
+- **Format**: Multi-paragraph short story
+- **Tone**: Incorporates elements of wonder, isolation, and hope
+- **Narrative Arc**: Clear beginning, middle, and hopeful conclusion
+
+The specialized prompts ensure consistent, engaging sci-fi narratives that can be meaningfully evaluated and compared across different AI models.
+
 ## Evaluation Pipeline
 
-The application includes an automated evaluation system that assesses generated stories on four key criteria:
+The application includes an automated evaluation system specifically designed to assess the quality of generated sci-fi stories about astronauts on exoplanets. The evaluation runs automatically after each story generation using GPT-4.1 Mini as the evaluation model.
 
-1. **Content Quality (1-10)**: How well the story meets prompt requirements and includes requested elements
+### Evaluation Criteria
+
+The stories are assessed on four key criteria using a 1-10 scale:
+
+1. **Content Quality (1-10)**: How well the story meets the specific prompt requirements including:
+   - Features a lone astronaut protagonist
+   - Takes place on a newly discovered exoplanet
+   - Includes survival themes and struggles
+   - Describes at least three distinct alien species or plant types
+   - Has a hopeful, open-ended conclusion
+
 2. **Writing Style (1-10)**: Clarity, engagement, structure, and grammatical correctness
-3. **Creativity (1-10)**: Originality, imagination, and unique perspectives
-4. **Emotional Impact (1-10)**: Ability to evoke emotions and engage the reader
+3. **Creativity (1-10)**: Originality, imagination, and unique perspectives in describing alien worlds
+4. **Emotional Impact (1-10)**: Ability to evoke emotions like wonder, isolation, and hope
 
-The evaluation runs automatically after story generation and displays results in a clean, organized dashboard with individual criterion scores, feedback, and an overall assessment.
+### Evaluation Process
+
+- **Automatic Trigger**: Evaluation begins immediately after story generation completes
+- **Structured Output**: Results are returned in JSON format with scores, feedback, and summary
+- **Performance Tracking**: Evaluation timing and token usage are logged for analysis
+- **Error Handling**: Graceful fallback if evaluation fails, with detailed error logging
+
+The evaluation runs automatically after story generation and displays results in a clean, organized dashboard with individual criterion scores, detailed feedback for each category, and an overall assessment.
 
 ## Token Usage Analytics
 
