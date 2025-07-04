@@ -93,20 +93,17 @@
           style="margin-top: 18px; color: #444; font-size: 0.98rem"
         ></div>
       </div>
-      <span id="spinner" style="display: none" class="spinner"></span>
       <div id="output" aria-live="polite"></div>
     </div>
     <script>
       const btn = document.getElementById("fetchBtn");
       const output = document.getElementById("output");
-      const spinner = document.getElementById("spinner");
       const statsDiv = document.getElementById("stats");
 
       btn.addEventListener("click", async () => {
         output.textContent = "";
         statsDiv.textContent = "";
         btn.disabled = true;
-        spinner.style.display = "inline-block";
         try {
           const response = await fetch("/llm");
           if (!response.ok || !response.body) {
@@ -152,7 +149,6 @@
           statsDiv.textContent = "";
         } finally {
           btn.disabled = false;
-          spinner.style.display = "none";
         }
       });
     </script>
