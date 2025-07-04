@@ -4,8 +4,8 @@ dotenv.config();
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import express from "express";
-import { generateStream } from "./llm.js"; // Ensure this path is correct
-import { generateEvaluation } from "./llmEvaluation.js"; // Ensure this path is correct
+import { generateStream } from "./llm/llm.js"; // Ensure this path is correct
+import { generateEvaluation } from "./llm/llmEvaluation.js"; // Ensure this path is correct
 import { time } from "node:console";
 
 const delayMs = 500;
