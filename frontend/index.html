@@ -1,118 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LLM Streaming Demo</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f6f8fa;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .container {
-      margin-top: 60px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-      padding: 32px 24px 24px 24px;
-      max-width: 600px;
-      width: 100%;
-    }
-    h1 {
-      margin-top: 0;
-      font-size: 2rem;
-      color: #222;
-    }
-    #output {
-      min-height: 120px;
-      background: #f0f4f8;
-      border-radius: 8px;
-      padding: 16px;
-      margin-top: 18px;
-      font-size: 1.1rem;
-      color: #222;
-      white-space: pre-wrap;
-      word-break: break-word;
-      border: 1px solid #e0e0e0;
-      transition: background 0.2s;
-    }
-    button {
-      background: #0057d8;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 12px 28px;
-      font-size: 1rem;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.2s;
-    }
-    button:disabled {
-      background: #b3c6e0;
-      cursor: not-allowed;
-    }
-    .spinner {
-      display: inline-block;
-      width: 22px;
-      height: 22px;
-      border: 3px solid #e0e0e0;
-      border-top: 3px solid #0057d8;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      vertical-align: middle;
-      margin-left: 10px;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>LLM Streaming Demo</h1>
-    <button id="fetchBtn">Generate Story</button>
-    <span id="spinner" style="display:none" class="spinner"></span>
-    <div id="output" aria-live="polite"></div>
-  </div>
-  <script>
-    const btn = document.getElementById('fetchBtn');
-    const output = document.getElementById('output');
-    const spinner = document.getElementById('spinner');
-
-    btn.addEventListener('click', async () => {
-      output.textContent = '';
-      btn.disabled = true;
-      spinner.style.display = 'inline-block';
-      try {
-        const response = await fetch('/llm');
-        if (!response.ok || !response.body) {
-          throw new Error('Failed to fetch LLM stream');
-        }
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let done = false;
-        while (!done) {
-          const { value, done: streamDone } = await reader.read();
-          if (value) {
-            output.textContent += decoder.decode(value, { stream: true });
-            output.scrollTop = output.scrollHeight;
-          }
-          done = streamDone;
-        }
-      } catch (err) {
-        output.textContent = 'Error: ' + err.message;
-      } finally {
-        btn.disabled = false;
-        spinner.style.display = 'none';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLM Streaming Demo</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        background: #f6f8fa;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
       }
-    });
-  </script>
-</body>
+      .container {
+        margin-top: 60px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+        padding: 32px 24px 24px 24px;
+        max-width: 600px;
+        width: 100%;
+      }
+      h1 {
+        margin-top: 0;
+        font-size: 2rem;
+        color: #222;
+      }
+      #output {
+        min-height: 120px;
+        background: #f0f4f8;
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 18px;
+        font-size: 1.1rem;
+        color: #222;
+        white-space: pre-wrap;
+        word-break: break-word;
+        border: 1px solid #e0e0e0;
+        transition: background 0.2s;
+      }
+      button {
+        background: #0057d8;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 12px 28px;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: background 0.2s;
+      }
+      button:disabled {
+        background: #b3c6e0;
+        cursor: not-allowed;
+      }
+      .spinner {
+        display: inline-block;
+        width: 22px;
+        height: 22px;
+        border: 3px solid #e0e0e0;
+        border-top: 3px solid #0057d8;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        vertical-align: middle;
+        margin-left: 10px;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>LLM Streaming Demo</h1>
+      <div class="controls">
+        <button id="fetchBtn">Generate Story</button>
+        <div
+          id="stats"
+          style="margin-top: 18px; color: #444; font-size: 0.98rem"
+        ></div>
+      </div>
+      <span id="spinner" style="display: none" class="spinner"></span>
+      <div id="output" aria-live="polite"></div>
+    </div>
+    <script>
+      const btn = document.getElementById("fetchBtn");
+      const output = document.getElementById("output");
+      const spinner = document.getElementById("spinner");
+      const statsDiv = document.getElementById("stats");
+
+      btn.addEventListener("click", async () => {
+        output.textContent = "";
+        statsDiv.textContent = "";
+        btn.disabled = true;
+        spinner.style.display = "inline-block";
+        try {
+          const response = await fetch("/llm");
+          if (!response.ok || !response.body) {
+            throw new Error("Failed to fetch LLM stream");
+          }
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let done = false;
+          let buffer = "";
+          while (!done) {
+            const { value, done: streamDone } = await reader.read();
+            if (value) {
+              const chunk = decoder.decode(value, { stream: true });
+              buffer += chunk;
+              // Check for stats marker
+              const marker = "\n---STATS---\n";
+              const markerIdx = buffer.indexOf(marker);
+              if (markerIdx !== -1) {
+                // Output before marker is the main output
+                output.textContent += buffer.slice(0, markerIdx);
+                // After marker is the stats JSON
+                const statsStr = buffer.slice(markerIdx + marker.length);
+                try {
+                  const stats = JSON.parse(statsStr);
+                  statsDiv.innerHTML = `<b>Stats:</b><br>Time to first token: <b>${stats.timeToFirstToken} ms</b><br>Total time: <b>${stats.totalTime} ms</b>`;
+                } catch (e) {
+                  statsDiv.textContent = "Stats: (failed to parse)";
+                }
+                buffer = "";
+                done = true;
+                break;
+              } else {
+                // No marker yet, just append chunk to output
+                output.textContent += chunk;
+                output.scrollTop = output.scrollHeight;
+                buffer = "";
+              }
+            }
+            done = streamDone;
+          }
+        } catch (err) {
+          output.textContent = "Error: " + err.message;
+          statsDiv.textContent = "";
+        } finally {
+          btn.disabled = false;
+          spinner.style.display = "none";
+        }
+      });
+    </script>
+  </body>
 </html>

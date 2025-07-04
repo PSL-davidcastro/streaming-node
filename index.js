@@ -6,6 +6,7 @@ import { pipeline } from "node:stream/promises";
 import express from "express";
 import { generateStream } from "./llm.js"; // Ensure this path is correct
 import { generateEvaluation } from "./llmEvaluation.js"; // Ensure this path is correct
+import { time } from "node:console";
 
 const delayMs = 500;
 
@@ -58,6 +59,12 @@ app.get("/llm", async (req, res) => {
           break;
       }
     }
+    const stats = {
+      timeToFirstToken: timeToFirstToken,
+      totalTime: Date.now() - startTime,
+    };
+    // Send stats as a final chunk with a marker
+    res.write(`\n---STATS---\n${JSON.stringify(stats)}`);
     res.end();
     const elapsedTime = Date.now() - startTime;
     // const evaluation = await generateEvaluation(output);
