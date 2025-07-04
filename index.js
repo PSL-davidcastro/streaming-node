@@ -45,34 +45,53 @@ app.get("/llm", async (req, res) => {
     let output = "";
     const stream = await generateStream();
     for await (const chunk of stream) {
-      switch (chunk.type) {
-        case "response.created":
-          timeToFirstToken = Date.now() - startTime;
-          break;
-        case "response.output_text.delta":
-          res.write(chunk.delta);
-          output += chunk.delta;
-          break;
-        case "response.error":
-          console.error("Error in response:", chunk.error);
-          res.write("Error: " + chunk.error + "\n");
-          break;
+      if (timeToFirstToken === 0) {
+        timeToFirstToken = Date.now() - startTime;
+      }
+
+      const content = chunk.choices?.[0]?.delta?.content;
+      if (content) {
+        res.write(content);
+        output += content;
       }
     }
     const stats = {
       timeToFirstToken: timeToFirstToken,
       totalTime: Date.now() - startTime,
     };
-    // Send stats as a final chunk with a marker
-    res.write(`\n---STATS---\n${JSON.stringify(stats)}`);
+
+    // Generate evaluation
+    console.log("Starting evaluation...");
+    const evaluationStartTime = Date.now();
+    let evaluation = null;
+    try {
+      evaluation = await generateEvaluation(output);
+      console.log(
+        "Evaluation completed in",
+        Date.now() - evaluationStartTime,
+        "ms"
+      );
+    } catch (evalError) {
+      console.error("Evaluation failed:", evalError);
+      evaluation = { error: "Evaluation failed", message: evalError.message };
+    }
+
+    const finalStats = {
+      ...stats,
+      evaluationTime: Date.now() - evaluationStartTime,
+      evaluation: evaluation,
+    };
+
+    // Send stats and evaluation as a final chunk with a marker
+    res.write(`\n---STATS---\n${JSON.stringify(finalStats)}`);
     res.end();
     const elapsedTime = Date.now() - startTime;
-    // const evaluation = await generateEvaluation(output);
     console.log({
       endpoint: "/llm",
       timeToFirstToken: `${timeToFirstToken} ms`,
       totalTime: `${elapsedTime} ms`,
-      // evaluation,
+      evaluationTime: `${Date.now() - evaluationStartTime} ms`,
+      evaluation,
     });
   } catch (error) {
     console.error("Error generating text:", error);

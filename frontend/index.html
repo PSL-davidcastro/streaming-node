@@ -81,6 +81,58 @@
         justify-content: space-between;
         align-items: center;
       }
+      .evaluation {
+        margin-top: 24px;
+        background: #f8fffe;
+        border: 1px solid #d4e6f1;
+        border-radius: 8px;
+        padding: 16px;
+        display: none;
+      }
+      .evaluation h3 {
+        margin-top: 0;
+        color: #2c3e50;
+        font-size: 1.2rem;
+      }
+      .criteria {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin: 16px 0;
+      }
+      .criterion {
+        background: white;
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid #e8ecef;
+      }
+      .criterion h4 {
+        margin: 0 0 8px 0;
+        color: #34495e;
+        font-size: 0.95rem;
+      }
+      .score {
+        font-weight: bold;
+        color: #27ae60;
+        font-size: 1.1rem;
+      }
+      .feedback {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 4px;
+      }
+      .overall {
+        text-align: center;
+        background: #ecf0f1;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 16px;
+      }
+      .overall-score {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2980b9;
+      }
     </style>
   </head>
   <body>
@@ -94,15 +146,72 @@
         ></div>
       </div>
       <div id="output" aria-live="polite"></div>
+      <div id="evaluation" class="evaluation">
+        <h3>📊 Story Evaluation</h3>
+        <div class="criteria" id="criteria"></div>
+        <div class="overall">
+          <div>
+            Overall Score:
+            <span class="overall-score" id="overallScore">-</span>/10
+          </div>
+          <div id="summary" style="margin-top: 8px; font-style: italic"></div>
+        </div>
+      </div>
     </div>
     <script>
       const btn = document.getElementById("fetchBtn");
       const output = document.getElementById("output");
       const statsDiv = document.getElementById("stats");
+      const evaluationDiv = document.getElementById("evaluation");
+      const criteriaDiv = document.getElementById("criteria");
+      const overallScoreDiv = document.getElementById("overallScore");
+      const summaryDiv = document.getElementById("summary");
+
+      function displayEvaluation(evaluation) {
+        if (!evaluation || evaluation.error) {
+          evaluationDiv.style.display = "none";
+          return;
+        }
+
+        // Clear previous content
+        criteriaDiv.innerHTML = "";
+
+        // Display criteria scores
+        const criteria = [
+          { key: "contentQuality", name: "Content Quality" },
+          { key: "writingStyle", name: "Writing Style" },
+          { key: "creativity", name: "Creativity" },
+          { key: "emotionalImpact", name: "Emotional Impact" },
+        ];
+
+        criteria.forEach((criterion) => {
+          if (evaluation[criterion.key]) {
+            const div = document.createElement("div");
+            div.className = "criterion";
+            div.innerHTML = `
+              <h4>${criterion.name}</h4>
+              <div class="score">${evaluation[criterion.key].score}/10</div>
+              <div class="feedback">${evaluation[criterion.key].feedback}</div>
+            `;
+            criteriaDiv.appendChild(div);
+          }
+        });
+
+        // Display overall score and summary
+        if (evaluation.overallScore) {
+          overallScoreDiv.textContent = evaluation.overallScore;
+        }
+        if (evaluation.summary) {
+          summaryDiv.textContent = evaluation.summary;
+        }
+
+        evaluationDiv.style.display = "block";
+      }
 
       btn.addEventListener("click", async () => {
         output.textContent = "";
         statsDiv.textContent = "";
+        evaluationDiv.style.display = "none";
         btn.disabled = true;
         try {
           const response = await fetch("/llm");
@@ -128,7 +237,16 @@
                 const statsStr = buffer.slice(markerIdx + marker.length);
                 try {
                   const stats = JSON.parse(statsStr);
-                  statsDiv.innerHTML = `<b>Stats:</b><br>Time to first token: <b>${stats.timeToFirstToken} ms</b><br>Total time: <b>${stats.totalTime} ms</b>`;
+                  let statsHtml = `<b>Stats:</b><br>Time to first token: <b>${stats.timeToFirstToken} ms</b><br>Total time: <b>${stats.totalTime} ms</b>`;
+                  if (stats.evaluationTime) {
+                    statsHtml += `<br>Evaluation time: <b>${stats.evaluationTime} ms</b>`;
+                  }
+                  statsDiv.innerHTML = statsHtml;
+
+                  // Display evaluation if available
+                  if (stats.evaluation) {
+                    displayEvaluation(stats.evaluation);
+                  }
                 } catch (e) {
                   statsDiv.textContent = "Stats: (failed to parse)";
                 }
@@ -147,6 +265,7 @@
         } catch (err) {
           output.textContent = "Error: " + err.message;
           statsDiv.textContent = "";
+          evaluationDiv.style.display = "none";
         } finally {
           btn.disabled = false;
         }

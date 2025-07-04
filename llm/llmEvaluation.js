@@ -12,15 +12,42 @@ export const generateEvaluation = async (story) => {
   if (!story || typeof story !== "string") {
     throw new Error("Invalid story input. Please provide a valid string.");
   }
+
   const userPrompt = prompts.evaluateLongStoryUserPrompt.replace(
     "{{story}}",
     story
   );
-  const systemPrompt = prompts.evaluateLongStorySystemPrompt;
-  const evaluation = await client.responses.create({
-    model: "gpt-4.1",
-    instructions: systemPrompt,
-    input: userPrompt,
-  });
-  return evaluation;
+
+  try {
+    const response = await client.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: prompts.evaluateLongStorySystemPrompt,
+        },
+        {
+          role: "user",
+          content: userPrompt,
+        },
+      ],
+      temperature: 0.3,
+    });
+
+    const evaluationText = response.choices[0].message.content;
+
+    // Try to parse as JSON, fallback to text if parsing fails
+    try {
+      return JSON.parse(evaluationText);
+    } catch (parseError) {
+      console.warn("Failed to parse evaluation as JSON, returning as text");
+      return {
+        error: "Failed to parse evaluation",
+        rawResponse: evaluationText,
+      };
+    }
+  } catch (error) {
+    console.error("Error generating evaluation:", error);
+    throw error;
+  }
 };

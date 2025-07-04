@@ -8,9 +8,14 @@ const client = new OpenAI({
 });
 
 export const generateStream = async () => {
-  const stream = await client.responses.create({
-    model: "gpt-4.1",
-    input: prompts.longStory,
+  const stream = await client.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "user",
+        content: prompts.longStory,
+      },
+    ],
     stream: true,
   });
   return stream;
