@@ -1,4 +1,4 @@
-# Streaming Node POC
+# Streaming Node LLM with comprehensive Evaluation (AI Judge)
 
 This project demonstrates streaming responses from a Node.js server using Express and the OpenAI API. It's a comprehensive AI story generation and evaluation platform that creates sci-fi stories about astronauts stranded on alien exoplanets, then automatically evaluates the quality of the generated content using a secondary AI model.
 
